@@ -12,5 +12,8 @@
       "source": "/((?!api/|uploads/).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "VITE_WS_URL": "https://yelo-1.onrender.com"
+  }
 }

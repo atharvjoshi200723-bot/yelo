@@ -3,6 +3,23 @@ import { io, Socket } from 'socket.io-client';
 let socket: Socket | null = null;
 
 /**
+ * Determine the Socket.IO server URL.
+ *
+ * Development: Vite proxies /socket.io to localhost:3001,
+ *   so we connect to the same origin as the page.
+ *
+ * Production (Vercel + Render): the frontend and backend are on
+ *   different domains, so we must connect directly to the backend.
+ *   VITE_WS_URL is set in Vercel env vars to https://yelo-1.onrender.com.
+ */
+function getSocketUrl(): string {
+  const wsUrl = import.meta.env.VITE_WS_URL;
+  if (wsUrl) return wsUrl;
+  // Fallback to same-origin (works with Vite proxy in dev)
+  return window.location.origin;
+}
+
+/**
  * Get or create the singleton socket connection.
  * Authenticates with the current JWT token from localStorage.
  */
@@ -14,14 +31,15 @@ export function getSocket(): Socket {
     throw new Error('No auth token — cannot connect socket');
   }
 
-  // Disconnect existing socket if token changed
+  // Disconnect existing socket if token changed or connection is stale
   if (socket) {
+    socket.removeAllListeners();
     socket.disconnect();
     socket = null;
   }
 
-  // Connect to the backend — in dev, Vite proxies /socket.io to localhost:3001
-  socket = io(window.location.origin, {
+  const url = getSocketUrl();
+  socket = io(url, {
     auth: { token },
     transports: ['websocket', 'polling'],
     reconnection: true,
@@ -31,7 +49,7 @@ export function getSocket(): Socket {
   });
 
   socket.on('connect', () => {
-    console.log('🔌 Socket connected:', socket?.id);
+    console.log('🔌 Socket connected:', socket?.id, '→', url);
   });
 
   socket.on('disconnect', (reason) => {

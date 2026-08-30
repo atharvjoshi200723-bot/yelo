@@ -20,6 +20,7 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const autoSelectRef = useRef<string | null>(null);
+  const selectedConvRef = useRef<Conversation | null>(null);
 
   const fetchConversations = useCallback(() => {
     setLoading(true);
@@ -59,6 +60,11 @@ export default function MessagesPage() {
     }
   }, [selectedConv]);
 
+  // Keep selectedConvRef in sync with selectedConv state
+  useEffect(() => {
+    selectedConvRef.current = selectedConv;
+  }, [selectedConv]);
+
   // --- Real-time Socket.IO ---
   useEffect(() => {
     let socket;
@@ -69,8 +75,10 @@ export default function MessagesPage() {
     }
 
     const handleNewMessage = (msg: Message & { conversation_id: string }) => {
+      const currentConv = selectedConvRef.current;
+
       // If the message belongs to the currently open conversation, append it
-      if (selectedConv && msg.conversation_id === selectedConv.id) {
+      if (currentConv && msg.conversation_id === currentConv.id) {
         // Deduplicate: don't add if we already have this message id
         setMessages(prev => {
           if (prev.some(m => m.id === msg.id)) return prev;
@@ -82,13 +90,13 @@ export default function MessagesPage() {
       // Update the conversation list: move the affected conversation to top, update last_message
       setConversations(prev => {
         const idx = prev.findIndex(c => c.id === msg.conversation_id);
-        if (idx === -1) return prev; // Conversation not in our list — ignore
+        if (idx === -1) return prev;
         const updated = [...prev];
         const conv = { ...updated[idx] };
         conv.last_message = msg.content;
         conv.last_message_at = msg.created_at;
         // Increment unread if it's not the currently open conversation
-        if (!selectedConv || selectedConv.id !== msg.conversation_id) {
+        if (!currentConv || currentConv.id !== msg.conversation_id) {
           conv.unread_count = (conv.unread_count || 0) + 1;
         }
         // Move to top
@@ -103,9 +111,9 @@ export default function MessagesPage() {
     return () => {
       socket.off('new_message', handleNewMessage);
     };
-  }, [selectedConv]);
+  }, []);
 
-  // Clean up socket on logout/unmount
+  // Clean up socket on unmount (user navigated away from Messages)
   useEffect(() => {
     return () => {
       disconnectSocket();
@@ -242,7 +250,7 @@ export default function MessagesPage() {
 
   // Chat view
   return (
-    <div className="flex flex-col -mx-4 -mt-4" style={{ height: 'calc(100vh - 4rem)' }}>
+    <div className="flex flex-col -mx-4 -mt-4" style={{ height: 'calc(100dvh - 4rem)' }}>
       {/* Chat header */}
       <div className="px-4 py-3 bg-white/95 backdrop-blur-lg border-b border-navy-100/20 flex items-center gap-3">
         <button onClick={() => setSelectedConv(null)} className="p-1 hover:bg-navy-50 rounded-xl transition-colors">
