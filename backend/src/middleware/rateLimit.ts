@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import { config } from '../lib/config';
 
 // Helper to create rate limiters with custom key generators
 function createLimiter(options: {
@@ -30,10 +31,10 @@ export const loginLimiter = createLimiter({
   message: 'Too many login attempts. Please try again in 15 minutes.',
 });
 
-// Registration: 3 accounts per hour per IP
+// Registration: 10 attempts per hour per IP (configurable)
 export const registerLimiter = createLimiter({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3,
+  windowMs: config.registerRateLimit.windowMs,
+  max: config.registerRateLimit.max,
   message: 'Too many accounts created. Please try again later.',
 });
 

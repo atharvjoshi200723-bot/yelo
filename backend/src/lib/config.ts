@@ -37,4 +37,8 @@ export const config = {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
   },
+  registerRateLimit: {
+    windowMs: parseInt(process.env.REGISTER_RATE_LIMIT_WINDOW_MS || '3600000', 10),
+    max: parseInt(process.env.REGISTER_RATE_LIMIT_MAX || '10', 10),
+  },
 };

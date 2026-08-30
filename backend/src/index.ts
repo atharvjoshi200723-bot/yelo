@@ -66,6 +66,9 @@ async function main() {
     });
   });
 
+  // Trust proxy — required for express-rate-limit to read real client IP behind Render's reverse proxy
+  app.set('trust proxy', 1);
+
   // Middleware
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(compression());
