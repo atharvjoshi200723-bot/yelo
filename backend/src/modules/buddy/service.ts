@@ -274,7 +274,7 @@ export async function createRequest(userId: string, buddyProfileId: string, data
   await query(
     `INSERT INTO notifications (user_id, type, title, message, data)
      VALUES ($1, 'buddy_request', 'New buddy request', 'Someone wants to hang out with you!', $2)`,
-    [prof.user_id, JSON.stringify({ buddyProfileId, requestId: result.rows[0] })]
+    [prof.user_id, JSON.stringify({ buddyProfileId, requestId: result.rows[0].id })]
   );
 
   return result.rows[0];
@@ -355,6 +355,22 @@ export async function getIncomingRequests(userId: string) {
     [userId]
   );
   return result.rows;
+}
+
+export async function getRequestById(userId: string, requestId: string) {
+  const result = await query(
+    `SELECT br.*, bp.title as buddy_title, bp.activities, bp.buddy_type,
+            rp.name as requester_name, rp.avatar_url as requester_avatar, rp.city as requester_city,
+            pp.name as provider_name, pp.avatar_url as provider_avatar
+     FROM buddy_requests br
+     JOIN buddy_profiles bp ON bp.id = br.buddy_profile_id
+     JOIN profiles rp ON rp.user_id = br.requester_id
+     JOIN profiles pp ON pp.user_id = br.provider_id
+     WHERE br.id = $1 AND (br.requester_id = $2 OR br.provider_id = $2)`,
+    [requestId, userId]
+  );
+  if (result.rows.length === 0) throw new AppError(404, 'Request not found');
+  return result.rows[0];
 }
 
 export async function getActivities() {

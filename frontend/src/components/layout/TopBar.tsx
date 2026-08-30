@@ -40,9 +40,9 @@ export default function TopBar() {
         {/* Actions */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => navigate('/messages')}
+            onClick={() => navigate('/notifications')}
             className="relative p-2 hover:bg-navy-50 rounded-xl transition-colors"
-            aria-label={`Messages${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+            aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
           >
             <Bell size={20} className="text-navy-600" aria-hidden="true" />
             {unreadCount > 0 && (

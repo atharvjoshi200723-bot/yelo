@@ -9,12 +9,14 @@ import RentDetailPage from './pages/RentDetailPage';
 import CreateListingPage from './pages/CreateListingPage';
 import BuddyPage from './pages/BuddyPage';
 import BuddyDetailPage from './pages/BuddyDetailPage';
+import BuddyRequestDetailPage from './pages/BuddyRequestDetailPage';
 import BecomeBuddyPage from './pages/BecomeBuddyPage';
 import MyBuddyProfilePage from './pages/MyBuddyProfilePage';
 import ForumsPage from './pages/ForumsPage';
 import ForumCategoryPage from './pages/ForumCategoryPage';
 import ForumPostPage from './pages/ForumPostPage';
 import MessagesPage from './pages/MessagesPage';
+import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import AdminPage from './pages/AdminPage';
@@ -57,11 +59,13 @@ function AppRoutes() {
         <Route path="/buddy" element={<BuddyPage />} />
         <Route path="/buddy/become" element={<BecomeBuddyPage />} />
         <Route path="/buddy/manage" element={<MyBuddyProfilePage />} />
+        <Route path="/buddy/requests/:id" element={<BuddyRequestDetailPage />} />
         <Route path="/buddy/:id" element={<BuddyDetailPage />} />
         <Route path="/forums" element={<ForumsPage />} />
         <Route path="/forums/:slug" element={<ForumCategoryPage />} />
         <Route path="/forums/post/:id" element={<ForumPostPage />} />
         <Route path="/messages" element={<MessagesPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/settings" element={<ProfileSettingsPage />} />
         <Route path="/profile/:userId" element={<ProfilePage />} />

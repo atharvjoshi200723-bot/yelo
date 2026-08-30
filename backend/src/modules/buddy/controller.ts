@@ -97,6 +97,12 @@ export async function getIncomingRequests(req: AuthRequest, res: Response) {
   res.json({ requests });
 }
 
+export async function getRequestById(req: AuthRequest, res: Response) {
+  const id = req.params.id as string;
+  const request = await buddyService.getRequestById(req.user!.id, id);
+  res.json({ request });
+}
+
 export async function getActivities(_req: AuthRequest, res: Response) {
   const activities = await buddyService.getActivities();
   res.json({ activities });
