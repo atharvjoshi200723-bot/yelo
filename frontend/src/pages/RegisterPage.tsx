@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const apiUrl = import.meta.env.VITE_API_URL || '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +147,7 @@ export default function RegisterPage() {
 
           <button
             type="button"
-            onClick={() => window.location.href = `${import.meta.env.VITE_API_URL || ''}/auth/google?mode=register`}
+            onClick={() => window.location.href = `${apiUrl}/auth/google?mode=register`}
             className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-medium hover:bg-slate-50 transition-colors"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">

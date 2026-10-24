@@ -8,7 +8,7 @@ function GoogleLogin() {
   return (
     <button
       type="button"
-      onClick={() => (window.location.href = `${apiUrl}/auth/google`)}
+      onClick={() => { window.location.href = `${apiUrl}/auth/google?mode=login`; }}
       className="w-full flex items-center justify-center gap-3 bg-google-blue text-white py-3 rounded-xl font-medium hover:bg-google-blue-dark transition-colors"
     >
       <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
