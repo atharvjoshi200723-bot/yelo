@@ -193,11 +193,20 @@ export async function linkOrUpdateGoogleAccount(profile: any, accessToken: strin
   } else {
     userId = uuidv4();
     await query(
-      `INSERT INTO users (id, email, provider, provider_id, avatar_url)
-       VALUES ($1, $2, 'google', $3, $4)`,
-      [userId, email, providerId, avatarUrl]
+      `INSERT INTO users (id, email, provider, provider_id)
+       VALUES ($1, $2, 'google', $3)`,
+      [userId, email, providerId]
     );
   }
+
+  // Google sign-in is the only source of the name/avatar, so make sure a
+  // profile row exists — /auth/me reads its name and avatar_url.
+  await query(
+    `INSERT INTO profiles (user_id, name, avatar_url)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (user_id) DO NOTHING`,
+    [userId, name, avatarUrl]
+  );
 
   await query(
     `INSERT INTO google_accounts (id, user_id, provider_id, email, name, avatar_url, access_token)

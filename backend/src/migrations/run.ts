@@ -75,6 +75,25 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Google sign-in: provider columns on users plus the google_accounts link table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS provider VARCHAR(32);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS provider_id VARCHAR(255);
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+
+CREATE TABLE IF NOT EXISTS google_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider_id VARCHAR(255) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL,
+  name VARCHAR(255),
+  avatar_url TEXT,
+  access_token TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_google_accounts_user_id ON google_accounts(user_id);
+
 CREATE TABLE IF NOT EXISTS colleges (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(200) NOT NULL,

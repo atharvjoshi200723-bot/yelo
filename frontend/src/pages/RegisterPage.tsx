@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 const SAFETY_RULES = [
   'Meet publicly and keep personal details private until you trust someone',
@@ -18,6 +18,19 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const apiUrl = import.meta.env.VITE_API_URL || '';
+  const [searchParams] = useSearchParams();
+
+  // Google redirects back with ?error=... — surface it rather than ignoring it.
+  useEffect(() => {
+    const providerError = searchParams.get('error');
+    if (providerError) {
+      setError(
+        providerError === 'google'
+          ? 'Google sign-up failed. Please try again.'
+          : `Google sign-up failed (${providerError}). Please try again.`
+      );
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
