@@ -106,6 +106,9 @@ export default function LoginPage() {
 
           <GoogleLogin />
 
+          <p className="text-center text-sm text-slate-500 mt-4">
+            Don’t have an account? Sign up below.
+          </p>
 
         </form>
       </div>
