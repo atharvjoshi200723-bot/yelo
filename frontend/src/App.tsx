@@ -4,6 +4,7 @@ import Layout from './components/layout/Layout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
+import LinkupPage from './pages/LinkupPage';
 import RentPage from './pages/RentPage';
 import RentDetailPage from './pages/RentDetailPage';
 import CreateListingPage from './pages/CreateListingPage';
@@ -61,6 +62,7 @@ function AppRoutes() {
         <Route path="/buddy/manage" element={<MyBuddyProfilePage />} />
         <Route path="/buddy/requests/:id" element={<BuddyRequestDetailPage />} />
         <Route path="/buddy/:id" element={<BuddyDetailPage />} />
+        <Route path="/linkup" element={<LinkupPage onClose={() => window.history.back()} />} />
         <Route path="/forums" element={<ForumsPage />} />
         <Route path="/forums/:slug" element={<ForumCategoryPage />} />
         <Route path="/forums/post/:id" element={<ForumPostPage />} />

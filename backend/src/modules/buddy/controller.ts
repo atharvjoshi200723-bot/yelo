@@ -103,6 +103,12 @@ export async function getRequestById(req: AuthRequest, res: Response) {
   res.json({ request });
 }
 
+export async function getBuddyMe(req: AuthRequest, res: Response) {
+  const profile = await buddyService.getMyProfile(req.user!.id);
+  if (!profile) return res.status(404).json({ error: 'No buddy profile found' });
+  res.json({ profile });
+}
+
 export async function getActivities(_req: AuthRequest, res: Response) {
   const activities = await buddyService.getActivities();
   res.json({ activities });

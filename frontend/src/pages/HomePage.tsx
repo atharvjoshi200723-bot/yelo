@@ -446,11 +446,11 @@ export default function HomePage() {
 
       {/* Category filters */}
       <div className="flex gap-2 mb-6 overflow-x-auto activity-scroll pb-1 -mx-4 px-4">
-        <button onClick={() => setShowPlan(true)}
+        <button onClick={() => window.location.href = '/linkup'}
           className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 btn-press ${
             'bg-navy-900 text-cream-50'
           }`}>
-          Create Plan
+          Linkup
         </button>
         <button onClick={() => setFilter('')}
           className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 btn-press ${
