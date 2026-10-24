@@ -1,17 +1,17 @@
 import { Router } from 'express';
-import { authenticate } from '../../middleware/auth';
+import { authenticate, AuthRequest } from '../../middleware/auth';
 import { upload } from '../../lib/upload';
 import { uploadLimiter, profileUpdateLimiter } from '../../middleware/rateLimit';
 import * as controller from './controller';
 import { asyncHandler } from '../../lib/utils';
 
-const router = Router();
+export const userRoutes = Router();
 
-router.get('/me', authenticate, asyncHandler(controller.getProfile));
-router.put('/me', authenticate, profileUpdateLimiter, asyncHandler(controller.updateProfile));
-router.post('/me/avatar', authenticate, uploadLimiter, upload.single('avatar'), asyncHandler(controller.uploadAvatar));
-router.get('/:userId', authenticate, asyncHandler(controller.getPublicProfile));
-router.post('/:userId/block', authenticate, asyncHandler(controller.blockUser));
-router.post('/:userId/unblock', authenticate, asyncHandler(controller.unblockUser));
+userRoutes.get('/me', authenticate, asyncHandler(controller.getProfile));
+userRoutes.put('/me', authenticate, profileUpdateLimiter, asyncHandler(controller.updateProfile));
+userRoutes.post('/me/avatar', authenticate, uploadLimiter, upload.single('avatar'), asyncHandler(controller.uploadAvatar));
+userRoutes.get('/:userId', authenticate, asyncHandler(controller.getPublicProfile));
+userRoutes.post('/:userId/block', authenticate, asyncHandler(controller.blockUser));
+userRoutes.post('/:userId/unblock', authenticate, asyncHandler(controller.unblockUser));
 
-export default router;
+export default userRoutes;
