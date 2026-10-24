@@ -45,8 +45,15 @@ export async function addComment(req: AuthRequest, res: Response) {
 
 export async function deletePost(req: AuthRequest, res: Response) {
   const id = req.params.id as string;
-  await feedService.deletePost(req.user!.id, id);
-  res.json({ message: 'Post deleted' });
+  try {
+    await feedService.deletePost(req.user!.id, id, req.user!.role);
+    res.json({ message: 'Post deleted' });
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('not authorized')) {
+      return res.status(403).json({ error: 'You can only delete your own posts' });
+    }
+    throw err;
+  }
 }
 
 export async function getComments(req: AuthRequest, res: Response) {

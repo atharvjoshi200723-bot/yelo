@@ -18,7 +18,6 @@ const CATEGORY_LABELS: Record<string, { label: string; emoji: string; color: str
   discussion: { label: 'Discussion', emoji: '💭', color: 'bg-navy-100 text-navy-600' },
 };
 
-
 export default function HomePage() {
   const { user } = useAuth();
   const [posts, setPosts] = useState<SocialPost[]>([]);
@@ -38,6 +37,10 @@ export default function HomePage() {
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
   const [submittingComment, setSubmittingComment] = useState<Record<string, boolean>>({});
+  // Delete state
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [deletingPost, setDeletingPost] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetchPosts = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     try {
@@ -174,6 +177,24 @@ export default function HomePage() {
     }
   };
 
+  // Delete post function
+  const deletePost = async (postId: string) => {
+    setDeletingPost(postId);
+    setDeleteError(null);
+    try {
+      await api.delete(`/feed/${postId}`);
+      // Remove from list optimistically
+      setPosts(prev => prev.filter(p => p.id !== postId));
+      setPostToDelete(null);
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      const msg = apiErr.response?.data?.error || 'Failed to delete post';
+      setDeleteError(msg);
+      // If 403 or other error, keep the post in the list
+    }
+    setDeletingPost(null);
+  };
+
   // Inline comment panel rendered below a post card
   const renderCommentPanel = (post: SocialPost) => {
     if (expandedComments !== post.id) return null;
@@ -305,6 +326,16 @@ export default function HomePage() {
                 <button onClick={() => sharePost(post.id)} className="ml-auto text-navy-400 hover:text-navy-600 transition-colors">
                   <Share2 size={16} />
                 </button>
+                {user?.id === post.user_id && (
+                  <button
+                    onClick={() => setPostToDelete(post.id)}
+                    disabled={deletingPost === post.id}
+                    className="text-navy-300 hover:text-red-500 transition-colors ml-2"
+                    aria-label="Delete post"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -386,6 +417,16 @@ export default function HomePage() {
             <button onClick={() => sharePost(post.id)} className="ml-auto text-navy-400 hover:text-navy-600 transition-colors">
               <Share2 size={16} />
             </button>
+            {user?.id === post.user_id && (
+              <button
+                onClick={() => setPostToDelete(post.id)}
+                disabled={deletingPost === post.id}
+                className="text-navy-300 hover:text-red-500 transition-colors"
+                aria-label="Delete post"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
           </div>
         </div>
         {renderCommentPanel(post)}
@@ -512,6 +553,42 @@ export default function HomePage() {
               Load more
             </button>
           )}
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {postToDelete && (
+        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full animate-fade-in">
+            <h3 className="font-display text-xl text-navy-900 mb-2">Delete this post?</h3>
+            <p className="text-sm text-navy-500 mb-6">
+              This action cannot be undone. The post will be permanently removed.
+            </p>
+            {deleteError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                {deleteError}
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPostToDelete(null)}
+                className="flex-1 py-3 text-navy-500 border border-navy-100/30 rounded-xl font-medium hover:bg-navy-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deletePost(postToDelete)}
+                disabled={deletingPost === postToDelete}
+                className="flex-1 py-3 bg-coral-500 text-white rounded-xl font-medium hover:bg-coral-600 disabled:opacity-50 transition-all btn-press flex items-center justify-center gap-2"
+              >
+                {deletingPost === postToDelete ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                ) : (
+                  <><Trash2 size={16} /> Delete</>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

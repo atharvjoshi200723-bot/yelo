@@ -3,16 +3,6 @@ import { AppError } from '../../middleware/errorHandler';
 import { CreateBuddyProfileInput, SearchBuddyQuery, CreateBuddyRequestInput } from './validators';
 
 export async function createOrUpdateProfile(userId: string, data: CreateBuddyProfileInput) {
-  // Age-gate: boyfriend/girlfriend types require 18+
-  if (data.buddyType === 'boyfriend' || data.buddyType === 'girlfriend') {
-    const userResult = await query('SELECT date_of_birth FROM users WHERE id = $1', [userId]);
-    const user = userResult.rows[0] as { date_of_birth: string } | undefined;
-    if (!user?.date_of_birth) {
-      throw new AppError(400, 'Your account needs a date of birth to create a boyfriend/girlfriend profile. Please use the Buddy type instead, or contact support to add your date of birth.');
-    }
-    const age = Math.floor((Date.now() - new Date(user.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-    if (age < 18) throw new AppError(403, 'You must be 18 or older to create a boyfriend/girlfriend profile');
-  }
 
   const existing = await query('SELECT id FROM buddy_profiles WHERE user_id = $1', [userId]);
   
