@@ -5,6 +5,7 @@ import { Heart, MessageCircle, Bookmark, Share2, Plus, X, MapPin, Send, Trash2 }
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { ErrorState, FeedSkeleton } from '../components/ui/FeedbackStates';
+import { CreatePlanModal } from '../components/plans/CreatePlanModal';
 
 const CATEGORIES = ['general', 'rent', 'buddy', 'college', 'event', 'question', 'discussion'];
 const CATEGORY_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
@@ -23,6 +24,7 @@ export default function HomePage() {
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [showPlan, setShowPlan] = useState(false);
   const [newPost, setNewPost] = useState({ category: 'general', content: '' });
   const [submitting, setSubmitting] = useState(false);
   const [page, setPage] = useState(1);
@@ -67,6 +69,14 @@ export default function HomePage() {
     }
     document.body.style.overflow = '';
   }, [showCreate]);
+  // Lock body scroll when plan modal is open
+  useEffect(() => {
+    if (showPlan) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+    document.body.style.overflow = '';
+  }, [showPlan]);
 
   const createPost = async () => {
     if (!newPost.content.trim()) return;
@@ -395,6 +405,12 @@ export default function HomePage() {
 
       {/* Category filters */}
       <div className="flex gap-2 mb-6 overflow-x-auto activity-scroll pb-1 -mx-4 px-4">
+        <button onClick={() => setShowPlan(true)}
+          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 btn-press ${
+            'bg-navy-900 text-cream-50'
+          }`}>
+          Create Plan
+        </button>
         <button onClick={() => setFilter('')}
           className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 btn-press ${
             !filter ? 'bg-navy-900 text-cream-50' : 'bg-white text-navy-500 hover:bg-navy-50 shadow-soft'
@@ -466,6 +482,11 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Create plan modal */}
+      {showPlan && (
+        <CreatePlanModal onClose={() => setShowPlan(false)} />
       )}
 
       {/* Posts feed with varied visual density */}
