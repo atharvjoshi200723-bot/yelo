@@ -682,24 +682,23 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Floating Create Buttons — Post first, Linkup to the left of it */}
-      <div className="fixed inset-x-4 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] flex flex-col-reverse items-stretch justify-end gap-3 px-4 pt-4 z-40">
+      {/* Floating actions — compact Post button bottom right, Linkup stacked above it */}
+      <div className="fixed right-4 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] flex flex-col items-end gap-3 z-40">
         <button
           type="button"
-          className="bg-navy-900 text-cream-50 shrink-0 rounded-2xl px-3 py-3 shadow-lifted hover:bg-navy-800 active:bg-navy-800 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press flex items-center justify-center text-sm font-medium"
-          aria-label="Create post"
+          onClick={() => setShowLinkup(true)}
+          className="rounded-full bg-amber-500 text-navy-900 px-3.5 py-2 text-xs font-semibold shadow-lifted hover:bg-amber-400 active:bg-amber-400 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press"
+          aria-label="Open linkup"
         >
-          <Plus size={18} />
-          Post
+          Linkup
         </button>
         <button
           type="button"
-          className="bg-navy-900 text-cream-50 shrink-0 rounded-2xl px-3 py-3 shadow-lifted hover:bg-navy-800 active:bg-navy-800 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press flex items-center justify-center text-sm font-medium"
-          aria-label="Open linkup"
-          onClick={() => setShowLinkup(true)}
-          style={{ marginLeft: "0.75rem" }}
+          onClick={() => setShowCreate(true)}
+          className="w-14 h-14 rounded-full bg-navy-900 text-cream-50 shadow-lifted hover:bg-navy-800 active:bg-navy-800 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press flex items-center justify-center"
+          aria-label="Create post"
         >
-          Linkup
+          <Plus size={24} />
         </button>
       </div>
     </div>
