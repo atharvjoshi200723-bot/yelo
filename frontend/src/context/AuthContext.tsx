@@ -59,6 +59,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Google sign-in hands tokens back in the URL; adopt them before loading the user.
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    const urlRefreshToken = params.get('refreshToken');
+    if (urlToken) {
+      localStorage.setItem('accessToken', urlToken);
+      if (urlRefreshToken) localStorage.setItem('refreshToken', urlRefreshToken);
+      params.delete('token');
+      params.delete('refreshToken');
+      const query = params.toString();
+      window.history.replaceState(
+        {},
+        '',
+        `${window.location.pathname}${query ? `?${query}` : ''}`
+      );
+    }
+
     refreshUser().finally(() => setLoading(false));
   }, [refreshUser]);
 

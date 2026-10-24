@@ -5,6 +5,7 @@ export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   apiUrl: process.env.API_URL || 'http://localhost:3001',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),
@@ -45,7 +46,9 @@ export const config = {
     enabled: process.env.GOOGLE_OAUTH_ENABLED === 'true',
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/auth/google/callback',
+    redirectUri:
+      process.env.GOOGLE_REDIRECT_URI ||
+      `${process.env.API_URL || 'http://localhost:3001'}/api/auth/google/callback`,
     issuer: process.env.GOOGLE_ISSUER || 'https://accounts.google.com',
     jwksUri: process.env.GOOGLE_JWKS_URI || 'https://www.googleapis.com/oauth2/v3/certs',
   },

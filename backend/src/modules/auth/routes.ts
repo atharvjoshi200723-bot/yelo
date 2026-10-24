@@ -7,6 +7,9 @@ import { config } from '../../lib/config';
 
 const router = Router();
 
+// Frontend origin that Google sign-in should hand control back to.
+const frontendBase = (): string => config.frontendUrl.replace(/\/+$/, '');
+
 router.post('/register', registerLimiter, asyncHandler(controller.register));
 router.post('/login', loginLimiter, asyncHandler(controller.login));
 router.post('/refresh', refreshLimiter, asyncHandler(controller.refreshToken));
@@ -44,22 +47,16 @@ if (config.google.enabled) {
 
   router.get(
     '/google/callback',
-    passport.authenticate('google', { session: false, failureRedirect: '/login' }),
+    passport.authenticate('google', { session: false, failureRedirect: `${frontendBase()}/login?error=google` }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     asyncHandler(async (req: any, res: any) => {
       const user = req.user as { id: string; email: string; name: string } | undefined;
-      if (!user) return res.redirect('/login');
+      if (!user) return res.redirect(`${frontendBase()}/login?error=google`);
       const token = await controller.signTokens(user);
-      const redirectParam = req.query.redirectTo as string | undefined;
-      const redirectTo = redirectParam || new URL(req.originalUrl || req.url, 'http://localhost').searchParams.get('redirectTo');
-      const mode = (req.query.mode as string | undefined) || 'login';
-      if (mode === 'register') {
-        res.redirect(`/register?token=${encodeURIComponent(token.accessToken)}&refreshToken=${encodeURIComponent(token.refreshToken)}`);
-      } else if (redirectTo) {
-        res.redirect(`${redirectTo}?token=${encodeURIComponent(token.accessToken)}`);
-      } else {
-        res.redirect(`/?token=${encodeURIComponent(token.accessToken)}&refreshToken=${encodeURIComponent(token.refreshToken)}`);
-      }
+      // Hand the session back to the frontend origin, which stores both tokens.
+      res.redirect(
+        `${frontendBase()}/?token=${encodeURIComponent(token.accessToken)}&refreshToken=${encodeURIComponent(token.refreshToken)}`
+      );
     })
   );
 }
