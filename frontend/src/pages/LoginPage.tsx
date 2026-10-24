@@ -107,7 +107,8 @@ export default function LoginPage() {
           <GoogleLogin />
 
           <p className="text-center text-sm text-slate-500 mt-4">
-            Don’t have an account? Sign up below.
+            Don’t have an account?{' '}
+            <Link to="/register" className="text-brand-600 hover:text-brand-700 font-medium">Sign up</Link>
           </p>
 
         </form>
