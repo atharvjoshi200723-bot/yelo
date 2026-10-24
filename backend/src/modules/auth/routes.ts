@@ -39,7 +39,7 @@ if (config.google.enabled) {
 
   router.get(
     '/google',
-    passport.authenticate('google', { scope: ['email', 'profile'], session: false })
+    passport.authenticate('google', { scope: ['email', 'profile'], session: false }),
   );
 
   router.get(

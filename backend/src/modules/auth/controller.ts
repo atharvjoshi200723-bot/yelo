@@ -46,5 +46,10 @@ export async function signTokens(user: { id: string; email: string; name: string
 }
 
 export async function linkOrUpdateGoogleAccount(profile: any, accessToken: string) {
-  return authService.linkOrUpdateGoogleAccount(profile, accessToken);
+  try {
+    return await authService.linkOrUpdateGoogleAccount(profile, accessToken);
+  } catch (err) {
+    console.error('[Google OAuth] Error linking account:', err);
+    throw err;
+  }
 }
