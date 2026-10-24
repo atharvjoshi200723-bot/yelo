@@ -144,8 +144,7 @@ export function CreatePlanModal({ onClose }: { onClose: () => void }) {
       className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
     >
       <div className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl rounded-b-3xl p-6 animate-slide-up max-h-[90dvh] sm:max-h-[85vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between mb-6 flex-shrink-0">
-          <h2 className="font-display text-display-sm text-navy-900">Create a Plan</h2>
+        <div className="flex items-center justify-between mb-6 flex-shrink-0">                <h2 className="font-display text-display-sm text-navy-900">Create Linkup</h2>
           <button
             onClick={() => onClose()}
             className="p-2 hover:bg-navy-50 rounded-xl transition-colors"

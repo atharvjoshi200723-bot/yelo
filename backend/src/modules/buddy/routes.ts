@@ -16,6 +16,7 @@ router.post('/profile/pause', authenticate, asyncHandler(controller.togglePause)
 router.post('/profile/image', authenticate, uploadLimiter, upload.single('buddyImage'), asyncHandler(controller.uploadBuddyImage));
 router.delete('/profile/image', authenticate, asyncHandler(controller.removeBuddyImage));
 router.get('/search', authenticate, searchLimiter, asyncHandler(controller.searchBuddies));
+router.get('/me', authenticate, asyncHandler(controller.getBuddyMe));
 router.get('/my-requests', authenticate, asyncHandler(controller.getMyRequests));
 router.get('/incoming-requests', authenticate, asyncHandler(controller.getIncomingRequests));
 router.get('/requests/:id', authenticate, asyncHandler(controller.getRequestById));
