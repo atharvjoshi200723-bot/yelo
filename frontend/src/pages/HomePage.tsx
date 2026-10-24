@@ -1,20 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import { SocialPost, Comment } from '../types';
-<<<<<<< HEAD
-import { Heart, MessageCircle, Bookmark, Share2, Plus, X, MapPin, Send, Trash2, Link2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { useAuth } from '../context/AuthContext';
-import { ErrorState, FeedSkeleton } from '../components/ui/FeedbackStates';
-import PlanCard from '../components/plans/PlanCard';
-import CreatePlanModal from '../components/plans/CreatePlanModal';
-import { parsePlan } from '../lib/plans';
-=======
 import { Heart, MessageCircle, Bookmark, Share2, Plus, X, MapPin, Send, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { ErrorState, FeedSkeleton } from '../components/ui/FeedbackStates';
->>>>>>> 075014357fcb547875ff57b4ff79ef64566ca48a
 
 const CATEGORIES = ['general', 'rent', 'buddy', 'college', 'event', 'question', 'discussion'];
 const CATEGORY_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
@@ -27,28 +17,12 @@ const CATEGORY_LABELS: Record<string, { label: string; emoji: string; color: str
   discussion: { label: 'Discussion', emoji: '💭', color: 'bg-navy-100 text-navy-600' },
 };
 
-<<<<<<< HEAD
-// Feed filters: the existing categories plus the LinkUp plans view.
-// Plans are stored as `event` posts (the only supported category that fits), so the
-// plans filter narrows that category down to real plans on the client.
-const FILTERS = [
-  { id: '', label: 'All', emoji: '' },
-  { id: 'plans', label: 'Plans', emoji: '🔗' },
-  ...CATEGORIES.map((cat) => ({ id: cat, label: CATEGORY_LABELS[cat].label, emoji: CATEGORY_LABELS[cat].emoji })),
-];
-
-=======
->>>>>>> 075014357fcb547875ff57b4ff79ef64566ca48a
 
 export default function HomePage() {
   const { user } = useAuth();
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-<<<<<<< HEAD
-  const [showPlan, setShowPlan] = useState(false);
-=======
->>>>>>> 075014357fcb547875ff57b4ff79ef64566ca48a
   const [newPost, setNewPost] = useState({ category: 'general', content: '' });
   const [submitting, setSubmitting] = useState(false);
   const [page, setPage] = useState(1);
@@ -67,21 +41,11 @@ export default function HomePage() {
     try {
       setError(null);
       const params: Record<string, string | number> = { page: pageNum, limit: 20, sort: 'recent' };
-<<<<<<< HEAD
-      const requestCategory = filter === 'plans' ? 'event' : filter;
-      if (requestCategory) params.category = requestCategory;
-      const res = await api.get('/feed', { params });
-      const fetched: SocialPost[] = res.data.posts || [];
-      const data = filter === 'plans' ? fetched.filter(post => parsePlan(post) !== null) : fetched;
-      setPosts(prev => append ? [...prev, ...data] : data);
-      setHasMore(fetched.length === 20);
-=======
       if (filter) params.category = filter;
       const res = await api.get('/feed', { params });
       const data = res.data.posts || [];
       setPosts(prev => append ? [...prev, ...data] : data);
       setHasMore(data.length === 20);
->>>>>>> 075014357fcb547875ff57b4ff79ef64566ca48a
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { error?: string } } };
       setError(apiErr.response?.data?.error || 'Failed to load posts');
@@ -120,28 +84,6 @@ export default function HomePage() {
     setSubmitting(false);
   };
 
-<<<<<<< HEAD
-  const handlePlanCreated = (post: SocialPost) => {
-    const created: SocialPost = {
-      ...post,
-      author_name: post.author_name || user?.name,
-      author_city: post.author_city || user?.city,
-      likes_count: post.likes_count ?? 0,
-      comments_count: post.comments_count ?? 0,
-      isLiked: false,
-      isSaved: false,
-    };
-    // The API response for a new post doesn't join the author, so fill it in locally.
-    // When another category filter is active the plan wouldn't be visible, so reset it.
-    if (filter === '') {
-      setPosts(prev => [created, ...prev]);
-    } else {
-      setFilter('');
-    }
-  };
-
-=======
->>>>>>> 075014357fcb547875ff57b4ff79ef64566ca48a
   const toggleLike = async (postId: string) => {
     try {
       const res = await api.post(`/feed/${postId}/like`);
@@ -305,38 +247,6 @@ export default function HomePage() {
       </button>
     );
 
-<<<<<<< HEAD
-    // LinkUp plans get their own card layout
-    const plan = parsePlan(post);
-    if (plan) {
-      return (
-        <div key={post.id} className="animate-fade-in">
-          <PlanCard
-            post={post}
-            plan={plan}
-            actions={<>
-              <button onClick={() => toggleLike(post.id)}
-                className={`flex items-center gap-1.5 text-sm transition-colors ${post.isLiked ? 'text-coral-500' : 'text-navy-400 hover:text-coral-500'}`}>
-                <Heart size={18} fill={post.isLiked ? 'currentColor' : 'none'} />
-                <span>{post.likes_count}</span>
-              </button>
-              {commentBtn}
-              <button onClick={() => toggleSave(post.id)}
-                className={`transition-colors ${post.isSaved ? 'text-amber-500' : 'text-navy-400 hover:text-amber-500'}`}>
-                <Bookmark size={18} fill={post.isSaved ? 'currentColor' : 'none'} />
-              </button>
-              <button onClick={() => sharePost(post.id)} className="ml-auto text-navy-400 hover:text-navy-600 transition-colors">
-                <Share2 size={16} />
-              </button>
-            </>}
-          />
-          {renderCommentPanel(post)}
-        </div>
-      );
-    }
-
-=======
->>>>>>> 075014357fcb547875ff57b4ff79ef64566ca48a
     // Large hero card
     if (isLarge && post.content.length > 50) {
       return (
@@ -476,48 +386,13 @@ export default function HomePage() {
   return (
     <div className="max-w-lg mx-auto">
       {/* Header */}
-<<<<<<< HEAD
-      <div className="mb-5">
-=======
       <div className="mb-6">
->>>>>>> 075014357fcb547875ff57b4ff79ef64566ca48a
         <h1 className="font-display text-display-lg text-navy-900">
           What's happening
           <br />nearby?
         </h1>
       </div>
 
-<<<<<<< HEAD
-      {/* LinkUp — create a plan */}
-      <button
-        onClick={() => setShowPlan(true)}
-        className="group relative w-full mb-5 overflow-hidden rounded-3xl bg-navy-900 p-4 sm:p-5 text-left shadow-soft btn-press"
-      >
-        <div className="absolute -right-4 -top-10 h-32 w-32 rounded-full bg-amber-500/25 blur-2xl" aria-hidden="true" />
-        <div className="relative flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-cream-50/10 flex items-center justify-center flex-shrink-0">
-            <Link2 size={20} className="text-amber-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-400">LinkUp</p>
-            <p className="font-display text-lg text-cream-50 leading-tight">Create a Plan</p>
-            <p className="text-[11px] text-navy-200 truncate">Walk, trek, gym, game — find people nearby</p>
-          </div>
-          <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-cream-50 text-navy-900 px-3 py-1.5 text-[11px] font-semibold flex-shrink-0">
-            <Plus size={12} /> New plan
-          </span>
-        </div>
-      </button>
-
-      {/* Category filters */}
-      <div className="flex gap-2 mb-6 overflow-x-auto activity-scroll pb-1 -mx-4 px-4">
-        {FILTERS.map(({ id, label, emoji }) => (
-          <button key={id || 'all'} onClick={() => setFilter(id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 btn-press ${
-              filter === id ? 'bg-navy-900 text-cream-50' : 'bg-white text-navy-500 hover:bg-navy-50 shadow-soft'
-            }`}>
-            {emoji} {label}
-=======
       {/* Category filters */}
       <div className="flex gap-2 mb-6 overflow-x-auto activity-scroll pb-1 -mx-4 px-4">
         <button onClick={() => setFilter('')}
@@ -532,18 +407,10 @@ export default function HomePage() {
               filter === cat ? 'bg-navy-900 text-cream-50' : 'bg-white text-navy-500 hover:bg-navy-50 shadow-soft'
             }`}>
             {CATEGORY_LABELS[cat].emoji} {CATEGORY_LABELS[cat].label}
->>>>>>> 075014357fcb547875ff57b4ff79ef64566ca48a
           </button>
         ))}
       </div>
 
-<<<<<<< HEAD
-      {showPlan && (
-        <CreatePlanModal onClose={() => setShowPlan(false)} onCreated={handlePlanCreated} />
-      )}
-
-=======
->>>>>>> 075014357fcb547875ff57b4ff79ef64566ca48a
       {/* Create post modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -609,27 +476,10 @@ export default function HomePage() {
       ) : posts.length === 0 ? (
         <div className="text-center py-20">
           <div className="w-16 h-16 bg-cream-200 rounded-3xl flex items-center justify-center mx-auto mb-4">
-<<<<<<< HEAD
-            <span className="text-3xl">{filter === 'plans' ? '🔗' : '🔍'}</span>
-          </div>
-          <p className="font-display text-display-sm text-navy-800 mb-2">
-            {filter === 'plans' ? 'No plans nearby yet' : 'Nothing yet'}
-          </p>
-          <p className="text-sm text-navy-400">
-            {filter === 'plans' ? 'Be the first to plan a walk, trek or game' : 'Be the first to share something with your community'}
-          </p>
-          {filter === 'plans' && (
-            <button onClick={() => setShowPlan(true)}
-              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-navy-900 text-cream-50 rounded-xl font-medium hover:bg-navy-800 transition-all btn-press">
-              <Plus size={16} /> Create a Plan
-            </button>
-          )}
-=======
             <span className="text-3xl">🔍</span>
           </div>
           <p className="font-display text-display-sm text-navy-800 mb-2">Nothing yet</p>
           <p className="text-sm text-navy-400">Be the first to share something with your community</p>
->>>>>>> 075014357fcb547875ff57b4ff79ef64566ca48a
         </div>
       ) : (
         <div className="space-y-4">
