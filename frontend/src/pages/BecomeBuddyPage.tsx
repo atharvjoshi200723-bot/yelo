@@ -19,12 +19,6 @@ const ACTIVITIES = [
   { name: 'Other', emoji: '✨' },
 ];
 
-const BUDDY_TYPES = [
-  { id: 'buddy', label: 'Buddy', emoji: '🧑‍🤝‍🧑', desc: 'General social companion' },
-  { id: 'boyfriend', label: 'Boyfriend', emoji: '❤️', desc: 'Dating-style companionship (18+)', requiresAge: 18 },
-  { id: 'girlfriend', label: 'Girlfriend', emoji: '💕', desc: 'Dating-style companionship (18+)', requiresAge: 18 },
-];
-
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 export default function BecomeBuddyPage() {
@@ -34,8 +28,7 @@ export default function BecomeBuddyPage() {
   const [loading, setLoading] = useState(false);
   const [existingProfile, setExistingProfile] = useState<Record<string, unknown> | null>(null);
 
-  // Form state
-  const [buddyType, setBuddyType] = useState('buddy');
+  // Form state - buddyType is always 'buddy' now, no selection needed
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
@@ -51,7 +44,7 @@ export default function BecomeBuddyPage() {
     api.get('/buddy/profile').then(res => {
       if (res.data.profile) {
         setExistingProfile(res.data.profile);
-        setBuddyType(res.data.profile.buddy_type || 'buddy');
+        // Always use 'buddy' type now
         setTitle(res.data.profile.title || '');
         setDescription(res.data.profile.description || '');
         setSelectedActivities(res.data.profile.activities || []);
@@ -112,12 +105,11 @@ export default function BecomeBuddyPage() {
 
   const canProceed = () => {
     switch (step) {
-      case 1: return true;
-      case 2: return title.length >= 5 && description.length >= 10;
-      case 3: return selectedActivities.length > 0;
-      case 4: return availabilityDays.length > 0;
-      case 5: return parseFloat(pricePerHour) > 0;
-      case 6: return true;
+      case 1: return title.length >= 5 && description.length >= 10;
+      case 2: return selectedActivities.length > 0;
+      case 3: return availabilityDays.length > 0;
+      case 4: return parseFloat(pricePerHour) > 0;
+      case 5: return true;
       default: return true;
     }
   };
@@ -126,7 +118,8 @@ export default function BecomeBuddyPage() {
     setLoading(true);
     try {
       const payload = {
-        buddyType,
+        // Always 'buddy' - no type selection anymore
+        buddyType: 'buddy',
         title,
         description,
         activities: selectedActivities,
@@ -154,7 +147,8 @@ export default function BecomeBuddyPage() {
     setLoading(false);
   };
 
-  const stepLabels = ['Type', 'About You', 'Activities', 'Availability', 'Pricing', 'Preview'];
+  // Step labels updated: no more "Type" step
+  const stepLabels = ['About You', 'Activities', 'Availability', 'Pricing', 'Preview'];
 
   return (
     <div className="pb-24 max-w-lg mx-auto">
@@ -178,55 +172,11 @@ export default function BecomeBuddyPage() {
         ))}
       </div>
 
-      {/* Under 18 Warning */}
-      {isUnder18 && (
-        <div className="bg-coral-50 border border-coral-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
-          <AlertCircle size={18} className="text-coral-600 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-navy-600">
-            <p className="font-semibold text-coral-700">Age restriction</p>
-            <p>You must be 18+ to create a boyfriend/girlfriend buddy profile. You can still create a general Buddy profile.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Step 1: Buddy Type */}
+      {/* Step 1: About You */}
       {step === 1 && (
-        <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-navy-500 tracking-wider uppercase">What kind of buddy?</h2>
-          <div className="space-y-3">
-            {BUDDY_TYPES.map(type => {
-              const isDisabled = !!(type.requiresAge) && isUnder18;
-              return (
-                <button
-                  key={type.id}
-                  onClick={() => !isDisabled && setBuddyType(type.id)}
-                  disabled={isDisabled}
-                  className={`w-full p-4 rounded-2xl text-left transition-all flex items-center gap-4 ${
-                    buddyType === type.id
-                      ? 'bg-navy-900 text-cream-50'
-                      : isDisabled
-                        ? 'bg-navy-50 text-navy-300 cursor-not-allowed'
-                        : 'bg-white border border-navy-100/30 text-navy-800 hover:border-navy-200'
-                  }`}
-                >
-                  <span className="text-3xl">{type.emoji}</span>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{type.label}</h3>
-                    <p className={`text-xs ${buddyType === type.id ? 'text-cream-50/60' : 'text-navy-400'}`}>{type.desc}</p>
-                  </div>
-                  {buddyType === type.id && <Check size={20} />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Step 2: About You */}
-      {step === 2 && (
         <div className="space-y-5">
           <h2 className="text-sm font-semibold text-navy-500 tracking-wider uppercase">About you</h2>
-          
+
           <div>
             <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">Profile title</label>
             <input
@@ -280,8 +230,8 @@ export default function BecomeBuddyPage() {
         </div>
       )}
 
-      {/* Step 3: Activities */}
-      {step === 3 && (
+      {/* Step 2: Activities */}
+      {step === 2 && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold text-navy-500 tracking-wider uppercase">What can you do together?</h2>
           <p className="text-xs text-navy-400">Select at least one activity</p>
@@ -304,11 +254,11 @@ export default function BecomeBuddyPage() {
         </div>
       )}
 
-      {/* Step 4: Availability */}
-      {step === 4 && (
+      {/* Step 3: Availability */}
+      {step === 3 && (
         <div className="space-y-5">
           <h2 className="text-sm font-semibold text-navy-500 tracking-wider uppercase">When are you available?</h2>
-          
+
           <div>
             <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-3">Days</label>
             <div className="flex flex-wrap gap-2">
@@ -355,11 +305,11 @@ export default function BecomeBuddyPage() {
         </div>
       )}
 
-      {/* Step 5: Pricing */}
-      {step === 5 && (
+      {/* Step 4: Pricing */}
+      {step === 4 && (
         <div className="space-y-5">
           <h2 className="text-sm font-semibold text-navy-500 tracking-wider uppercase">Set your rate</h2>
-          
+
           <div className="bg-cream-50 rounded-2xl p-6 text-center">
             <p className="text-xs font-semibold text-navy-400 tracking-wider uppercase mb-4">Price per session</p>
             <div className="flex items-center justify-center gap-2">
@@ -396,25 +346,21 @@ export default function BecomeBuddyPage() {
           <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3">
             <Shield size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-navy-600 leading-relaxed">
-              <span className="font-semibold">Payment note:</span> YELO does not handle payments directly. 
+              <span className="font-semibold">Payment note:</span> YELO does not handle payments directly.
               You and the requester agree on payment in chat. Meet in a public place.
             </p>
           </div>
         </div>
       )}
 
-      {/* Step 6: Preview */}
-      {step === 6 && (
+      {/* Step 5: Preview */}
+      {step === 5 && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold text-navy-500 tracking-wider uppercase">Preview your profile</h2>
-          
+
           <div className="bg-white rounded-3xl shadow-soft overflow-hidden">
-            {/* Header */}
-            <div className={`p-6 text-center ${
-              buddyType === 'boyfriend' ? 'bg-gradient-to-br from-rose-500 to-pink-600' :
-              buddyType === 'girlfriend' ? 'bg-gradient-to-br from-fuchsia-500 to-purple-600' :
-              'bg-gradient-to-br from-amber-500 to-orange-600'
-            }`}>
+            {/* Header - always amber/orange gradient for Buddy type */}
+            <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-6 text-center">
               {imageUrls[0] ? (
                 <img src={imageUrls[0]} alt="Buddy profile preview" className="w-24 h-24 rounded-2xl mx-auto mb-3 object-cover border-2 border-white/30" />
               ) : (
@@ -458,8 +404,8 @@ export default function BecomeBuddyPage() {
           <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3">
             <Shield size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-navy-600 leading-relaxed">
-              By publishing, you agree to YELO's safety rules. Social companionship only. 
-              No sexual services. 18+ for boyfriend/girlfriend categories.
+              By publishing, you agree to YELO's safety rules. Social companionship only.
+              No sexual services.
             </p>
           </div>
         </div>
@@ -475,7 +421,7 @@ export default function BecomeBuddyPage() {
             Back
           </button>
         )}
-        {step < 6 ? (
+        {step < 5 ? (
           <button
             onClick={() => setStep(step + 1)}
             disabled={!canProceed()}

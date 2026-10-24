@@ -58,7 +58,7 @@ export async function getFeed(userId: string, params: FeedQuery) {
   const offsetParam = paramIndex++;
 
   const result = await query(
-    `SELECT sp.*, 
+    `SELECT sp.*,
             p.name as author_name, p.avatar_url as author_avatar, p.city as author_city, p.college as author_college
      FROM social_posts sp
      JOIN profiles p ON p.user_id = sp.user_id
@@ -100,7 +100,7 @@ export async function getFeed(userId: string, params: FeedQuery) {
 
 export async function getPostById(postId: string, userId: string) {
   const result = await query(
-    `SELECT sp.*, 
+    `SELECT sp.*,
             p.name as author_name, p.avatar_url as author_avatar, p.city as author_city, p.college as author_college
      FROM social_posts sp
      JOIN profiles p ON p.user_id = sp.user_id
@@ -178,7 +178,14 @@ export async function addComment(userId: string, postId: string, content: string
   return result.rows[0];
 }
 
-export async function deletePost(userId: string, postId: string) {
+export async function deletePost(userId: string, postId: string, role: string) {
+  if (role === 'admin') {
+    // Admins can delete any post
+    const result = await query('DELETE FROM social_posts WHERE id = $1 RETURNING id', [postId]);
+    if (result.rows.length === 0) throw new AppError(404, 'Post not found');
+    return;
+  }
+  // Non-admins can only delete their own posts
   const result = await query('DELETE FROM social_posts WHERE id = $1 AND user_id = $2 RETURNING id', [postId, userId]);
   if (result.rows.length === 0) throw new AppError(404, 'Post not found or not authorized');
 }

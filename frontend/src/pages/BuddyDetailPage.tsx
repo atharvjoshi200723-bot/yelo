@@ -7,12 +7,6 @@ import { useAuth } from '../context/AuthContext';
 import ReportModal from '../components/moderation/ReportModal';
 import BlockButton from '../components/moderation/BlockButton';
 
-const BUDDY_TYPE_INFO: Record<string, { label: string; emoji: string; gradient: string }> = {
-  boyfriend: { label: 'Rent a Boyfriend', emoji: '❤️', gradient: 'from-rose-500 to-pink-600' },
-  girlfriend: { label: 'Rent a Girlfriend', emoji: '💕', gradient: 'from-fuchsia-500 to-purple-600' },
-  buddy: { label: 'Rent a Buddy', emoji: '🧑‍🤝‍🧑', gradient: 'from-amber-500 to-orange-600' },
-};
-
 const REQUEST_ACTIVITIES = [
   { name: 'Coffee', emoji: '☕' },
   { name: 'Movie', emoji: '🎬' },
@@ -105,14 +99,12 @@ export default function BuddyDetailPage() {
       <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-navy-900" />
     </div>
   );
-  
+
   if (!buddy) return null;
 
   const age = buddy.date_of_birth
     ? Math.floor((Date.now() - new Date(buddy.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
     : null;
-
-  const typeInfo = BUDDY_TYPE_INFO[buddy.buddy_type] || BUDDY_TYPE_INFO.buddy;
 
   return (
     <div className="pb-24">
@@ -124,12 +116,12 @@ export default function BuddyDetailPage() {
         <span className="text-xs text-navy-400 font-medium">Back to activities</span>
       </div>
 
-      {/* Profile Card */}
+      {/* Profile Card - Always Buddy gradient */}
       <div className="bg-white rounded-3xl shadow-soft overflow-hidden mb-6">
-        {/* Avatar Section with Type Badge */}
-        <div className={`bg-gradient-to-br ${typeInfo.gradient} p-8 text-center relative`}>
+        {/* Avatar Section */}
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-8 text-center relative">
           <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5">
-            <span className="text-xs font-medium text-white">{typeInfo.emoji} {typeInfo.label}</span>
+            <span className="text-xs font-medium text-white">🧑‍🤝‍🧑 Buddy</span>
           </div>
           <div className="w-28 h-28 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm border-2 border-white/30">
             <span className="text-5xl font-bold text-white">{buddy.name?.charAt(0)}</span>
@@ -248,7 +240,7 @@ export default function BuddyDetailPage() {
       {/* CTA */}
       {!requestSent && user?.id !== buddy.user_id && (
         <div className="flex gap-3">
-          <button 
+          <button
             onClick={() => setShowRequestForm(true)}
             className="flex-1 bg-navy-900 text-cream-50 py-4 rounded-2xl font-medium hover:bg-navy-800 transition-all btn-press text-lg"
           >
@@ -277,7 +269,7 @@ export default function BuddyDetailPage() {
                 {requestError}
               </div>
             )}
-            
+
             <div className="space-y-5">
               {/* Activity Selection */}
               <div>
@@ -288,8 +280,8 @@ export default function BuddyDetailPage() {
                       key={act.name}
                       onClick={() => setRequestForm({ ...requestForm, activity: act.name })}
                       className={`p-3 rounded-2xl text-center transition-all ${
-                        requestForm.activity === act.name 
-                          ? 'bg-navy-900 text-cream-50' 
+                        requestForm.activity === act.name
+                          ? 'bg-navy-900 text-cream-50'
                           : 'bg-cream-100 text-navy-700 hover:bg-cream-200'
                       }`}
                     >
@@ -304,20 +296,20 @@ export default function BuddyDetailPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">Date</label>
-                  <input 
-                    type="date" 
-                    value={requestForm.proposedDate} 
+                  <input
+                    type="date"
+                    value={requestForm.proposedDate}
                     onChange={e => setRequestForm({ ...requestForm, proposedDate: e.target.value })}
-                    className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500" 
+                    className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">Time</label>
-                  <input 
-                    type="time" 
-                    value={requestForm.proposedTime} 
+                  <input
+                    type="time"
+                    value={requestForm.proposedTime}
                     onChange={e => setRequestForm({ ...requestForm, proposedTime: e.target.value })}
-                    className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500" 
+                    className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                   />
                 </div>
               </div>
@@ -325,8 +317,8 @@ export default function BuddyDetailPage() {
               {/* Duration */}
               <div>
                 <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">Duration</label>
-                <select 
-                  value={requestForm.proposedDurationHours} 
+                <select
+                  value={requestForm.proposedDurationHours}
                   onChange={e => setRequestForm({ ...requestForm, proposedDurationHours: e.target.value })}
                   className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
                 >
@@ -341,37 +333,37 @@ export default function BuddyDetailPage() {
               {/* Message */}
               <div>
                 <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">Your message</label>
-                <textarea 
-                  value={requestForm.message} 
+                <textarea
+                  value={requestForm.message}
                   onChange={e => setRequestForm({ ...requestForm, message: e.target.value })}
                   className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 placeholder-navy-300 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none"
-                  rows={3} 
-                  placeholder={`Would you like to ${requestForm.activity?.toLowerCase() || 'hang out'}?`} 
+                  rows={3}
+                  placeholder={`Would you like to ${requestForm.activity?.toLowerCase() || 'hang out'}?`}
                 />
               </div>
 
               {/* Location */}
               <div>
                 <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">Suggested location</label>
-                <input 
-                  type="text" 
-                  value={requestForm.proposedLocation} 
+                <input
+                  type="text"
+                  value={requestForm.proposedLocation}
                   onChange={e => setRequestForm({ ...requestForm, proposedLocation: e.target.value })}
                   className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 placeholder-navy-300 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
-                  placeholder="e.g., Pacific Mall, Rajpur Road" 
+                  placeholder="e.g., Pacific Mall, Rajpur Road"
                 />
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex gap-3 mt-6">
-              <button 
+              <button
                 onClick={() => setShowRequestForm(false)}
                 className="flex-1 py-3.5 text-navy-500 border border-navy-100/30 rounded-2xl font-medium hover:bg-navy-50 transition-colors"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleRequest}
                 disabled={submitting || !requestForm.proposedDate || !requestForm.activity}
                 className="flex-1 py-3.5 bg-navy-900 text-cream-50 rounded-2xl font-medium hover:bg-navy-800 disabled:opacity-50 transition-all btn-press flex items-center justify-center gap-2"

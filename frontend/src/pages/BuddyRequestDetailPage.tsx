@@ -19,7 +19,7 @@ interface BuddyRequest {
   agreed_price: number | null;
   created_at: string;
   buddy_title: string;
-  buddy_type: string;
+
   requester_name: string;
   requester_avatar: string | null;
   requester_city: string | null;

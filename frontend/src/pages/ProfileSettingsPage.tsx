@@ -248,17 +248,14 @@ export default function ProfileSettingsPage() {
         </div>
       </div>
 
-      {/* Buddy Section */}
+      {/* Buddy Section - Always Buddy type now */}
       <div className="bg-white rounded-2xl shadow-soft p-5 mb-4">
         <h3 className="text-xs font-semibold text-navy-500 tracking-wider uppercase mb-4">Buddy</h3>
         {buddyProfile ? (
           <Link to="/buddy/manage" className="flex items-center justify-between p-3 bg-cream-50 rounded-xl hover:bg-cream-100 transition-colors">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                buddyProfile.buddy_type === 'boyfriend' ? 'bg-rose-100' :
-                buddyProfile.buddy_type === 'girlfriend' ? 'bg-fuchsia-100' : 'bg-amber-100'
-              }`}>
-                <span className="text-lg">{buddyProfile.buddy_type === 'boyfriend' ? '❤️' : buddyProfile.buddy_type === 'girlfriend' ? '💕' : '🧑‍🤝‍🧑'}</span>
+              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                <span className="text-lg">🧑‍🤝‍🧑</span>
               </div>
               <div>
                 <p className="text-sm font-medium text-navy-800">My Buddy Profile</p>

@@ -98,7 +98,7 @@ export interface RentalRequest {
 export interface BuddyProfile {
   id: string;
   user_id: string;
-  buddy_type: 'boyfriend' | 'girlfriend' | 'buddy';
+  buddy_type: 'buddy';
   title: string;
   description: string;
   activities: string[];

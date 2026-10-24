@@ -16,9 +16,8 @@ const ACTIVITIES = [
   { name: 'Date', emoji: '❤️', bg: 'bg-rose-100' },
 ];
 
+// Only Buddy type remains - no more boyfriend/girlfriend
 const BUDDY_TYPES = [
-  { id: 'boyfriend', label: 'Boyfriend', emoji: '❤️', desc: 'Dating companionship', gradient: 'from-rose-500 to-pink-600' },
-  { id: 'girlfriend', label: 'Girlfriend', emoji: '💕', desc: 'Dating companionship', gradient: 'from-fuchsia-500 to-purple-600' },
   { id: 'buddy', label: 'Buddy', emoji: '🧑‍🤝‍🧑', desc: 'Hang out together', gradient: 'from-amber-500 to-orange-600' },
 ];
 
@@ -35,12 +34,12 @@ export default function BuddyPage() {
   const [buddies, setBuddies] = useState<BuddyProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<string | null>(searchParams.get('type'));
+  const [selectedType, setSelectedType] = useState<string | null>('buddy');
   const [selectedActivity, setSelectedActivity] = useState<string | null>(searchParams.get('activity'));
   const [sort, setSort] = useState('rating');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [view, setView] = useState<'home' | 'find' | 'results'>(
-    searchParams.get('type') || searchParams.get('activity') ? 'results' : 'home'
+    searchParams.get('activity') ? 'results' : 'home'
   );
 
   useEffect(() => {
@@ -82,7 +81,6 @@ export default function BuddyPage() {
 
   const handleFindBuddy = () => {
     setView('find');
-    setSelectedType(null);
     setSelectedActivity(null);
     setSearchParams({});
   };
@@ -91,7 +89,7 @@ export default function BuddyPage() {
     setSelectedType(typeId);
     setSelectedActivity(null);
     setView('results');
-    setSearchParams({ type: typeId });
+    // No query param needed since only 'buddy' exists
   };
 
   const handleActivitySelect = (activity: string) => {
@@ -104,7 +102,6 @@ export default function BuddyPage() {
   const handleBack = () => {
     if (view === 'results') {
       setView('find');
-      setSelectedType(null);
       setSelectedActivity(null);
       setSearchParams({});
     } else if (view === 'find') {
@@ -183,37 +180,12 @@ export default function BuddyPage() {
         </div>
       )}
 
-      {/* FIND VIEW — Type + Activity selection */}
+      {/* FIND VIEW — Activity selection only (no type filtering needed) */}
       {view === 'find' && (
         <div className="space-y-6">
           <div>
             <h2 className="font-display text-2xl text-navy-900 mb-1">Find a Buddy</h2>
-            <p className="text-sm text-navy-400">What kind of companion are you looking for?</p>
-          </div>
-
-          {/* Buddy Types */}
-          <div>
-            <h3 className="text-xs font-semibold text-navy-500 tracking-wider uppercase mb-3">By type</h3>
-            <div className="grid grid-cols-3 gap-3">
-              {BUDDY_TYPES.map(type => (
-                <button
-                  key={type.id}
-                  onClick={() => handleTypeSelect(type.id)}
-                  className={`bg-gradient-to-br ${type.gradient} rounded-2xl p-4 text-left card-hover btn-press transition-all`}
-                >
-                  <span className="text-2xl block mb-2">{type.emoji}</span>
-                  <span className="font-semibold text-white text-sm block">{type.label}</span>
-                  <span className="text-white/60 text-xs">{type.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-px bg-navy-100/30" />
-            <span className="text-xs text-navy-400 font-medium">OR BY ACTIVITY</span>
-            <div className="flex-1 h-px bg-navy-100/30" />
+            <p className="text-sm text-navy-400">What do you want to do together?</p>
           </div>
 
           {/* Activities */}
@@ -239,9 +211,7 @@ export default function BuddyPage() {
         <div>
           <div className="mb-4">
             <h2 className="font-display text-2xl text-navy-900">
-              {selectedType ? BUDDY_TYPES.find(t => t.id === selectedType)?.emoji : ''}
-              {' '}
-              {selectedType ? BUDDY_TYPES.find(t => t.id === selectedType)?.label : selectedActivity}
+              {selectedActivity}
             </h2>
             <p className="text-sm text-navy-400 mt-1">
               {loading ? 'Searching...' : error ? '' : `${buddies.length} people nearby`}
@@ -263,7 +233,7 @@ export default function BuddyPage() {
           {loading ? (
             <FeedSkeleton count={3} />
           ) : error ? (
-            <ErrorState message={error} onRetry={() => fetchBuddies(selectedType || undefined, selectedActivity || undefined)} />
+            <ErrorState message={error} onRetry={() => fetchBuddies(undefined, selectedActivity || undefined)} />
           ) : buddies.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-20 h-20 bg-cream-200 rounded-3xl flex items-center justify-center mx-auto mb-4">

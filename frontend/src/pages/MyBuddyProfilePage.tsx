@@ -4,12 +4,6 @@ import api from '../lib/api';
 import { BuddyProfile } from '../types';
 import { ArrowLeft, Edit2, Pause, Play, Trash2, Star, MapPin, CheckCircle, Eye } from 'lucide-react';
 
-const BUDDY_TYPE_INFO: Record<string, { label: string; emoji: string; gradient: string }> = {
-  boyfriend: { label: 'Boyfriend', emoji: '❤️', gradient: 'from-rose-500 to-pink-600' },
-  girlfriend: { label: 'Girlfriend', emoji: '💕', gradient: 'from-fuchsia-500 to-purple-600' },
-  buddy: { label: 'Buddy', emoji: '🧑‍🤝‍🧑', gradient: 'from-amber-500 to-orange-600' },
-};
-
 export default function MyBuddyProfilePage() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<BuddyProfile | null>(null);
@@ -64,7 +58,6 @@ export default function MyBuddyProfilePage() {
     </div>
   );
 
-  const typeInfo = BUDDY_TYPE_INFO[profile.buddy_type] || BUDDY_TYPE_INFO.buddy;
   const isActive = profile.status === 'active';
 
   return (
@@ -101,11 +94,11 @@ export default function MyBuddyProfilePage() {
         </div>
       </div>
 
-      {/* Profile Preview Card */}
+      {/* Profile Preview Card - Always Buddy gradient */}
       <div className="bg-white rounded-3xl shadow-soft overflow-hidden mb-4">
-        <div className={`bg-gradient-to-br ${typeInfo.gradient} p-6 text-center relative`}>
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-6 text-center relative">
           <div className="absolute top-3 left-3 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
-            <span className="text-xs font-medium text-white">{typeInfo.emoji} {typeInfo.label}</span>
+            <span className="text-xs font-medium text-white">🧑‍🤝‍🧑 Buddy</span>
           </div>
           {profile.image_urls?.[0] ? (
             <img src={profile.image_urls[0]} alt="Your buddy profile photo" className="w-20 h-20 rounded-2xl mx-auto mb-3 object-cover border-2 border-white/30" />
