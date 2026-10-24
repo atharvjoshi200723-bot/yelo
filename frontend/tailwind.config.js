@@ -49,6 +49,13 @@ export default {
           600: '#D97706',
           700: '#B45309',
         },
+        google: {
+          blue: '#4285F4',
+          lightBlue: '#34A853',
+          red: '#EA4335',
+          yellow: '#FBBC04',
+          blueDark: '#3367D6',
+        },
         accent: {
           50: '#FFF7ED',
           500: '#F97316',

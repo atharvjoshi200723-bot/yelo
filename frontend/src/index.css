@@ -4,6 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --google-blue: #4285f4;
+    --google-blue-dark: #3367d6;
+  }
+}
+
+.bg-google-blue {
+  background-color: var(--google-blue);
+}
+.bg-google-blue-dark {
+  background-color: var(--google-blue-dark);
+}
+
 :root {
   --color-cream: #FEFCF8;
   --color-cream-dark: #FDF8EE;

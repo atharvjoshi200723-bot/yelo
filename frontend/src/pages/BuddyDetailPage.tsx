@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { BuddyProfile } from '../types';
+import { BuddyProfile, BuddyRequest } from '../types';
 import { MapPin, Star, ArrowLeft, MessageCircle, Shield, CheckCircle, Clock, Heart, Calendar, Send, Flag, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ReportModal from '../components/moderation/ReportModal';
@@ -23,7 +23,7 @@ export default function BuddyDetailPage() {
   const [buddy, setBuddy] = useState<BuddyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showRequestForm, setShowRequestForm] = useState(false);
-  const [requestSent, setRequestSent] = useState(false);
+  const [requestState, setRequestState] = useState<BuddyRequest | null>(null);
   const [requestForm, setRequestForm] = useState({
     activity: '',
     message: '',
@@ -45,24 +45,47 @@ export default function BuddyDetailPage() {
     }).catch(() => navigate('/buddy'));
   }, [id]);
 
-  // Check if a conversation already exists with this buddy's user
+  // Check request status + conversation for this buddy profile
   useEffect(() => {
-    if (!buddy?.user_id) return;
-    api.get(`/messages/find?userId=${buddy.user_id}&type=buddy`).then(res => {
-      if (res.data.conversationId) {
-        setConversationId(res.data.conversationId);
-      }
-    }).catch(() => {
-      // Silently ignore — conversation may not exist yet
-    });
-  }, [buddy?.user_id]);
+    if (!buddy?.id || !user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        // Find an existing request from the current user to this buddy profile
+        const statusRes = await api.get(`/buddy/${buddy.id}/request-status`, { params: { requesterId: user.id } });
+        const existingRequest = statusRes.data.request || null;
+        if (cancelled) return;          if (existingRequest) {
+          setRequestState((prev: BuddyRequest | null) => {
+            if (prev?.id !== existingRequest.id) return { ...prev, ...existingRequest, fromCache: false };
+            return prev;
+          });
 
-  const handleRequest = async () => {
+          // If accepted, look up the conversation
+          if (existingRequest.status === 'accepted' && existingRequest.conversation_id) {
+            setConversationId(existingRequest.conversation_id);
+          }
+        } else {
+          // No request yet; check whether a conversation exists directly
+          try {
+            const convRes = await api.get(`/messages/find?userId=${buddy.user_id}&type=buddy`);
+            if (convRes.data.conversationId && !cancelled) {
+              setConversationId(convRes.data.conversationId);
+            }
+          } catch {
+            // Conversation may not exist yet
+          }
+        }
+      } catch {
+        // Ignore request-status fetch failures
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [buddy?.id, buddy?.user_id, user?.id]);  const handleRequest = async () => {
     if (!id) return;
     setRequestError(null);
     setSubmitting(true);
     try {
-      await api.post(`/buddy/${id}/requests`, {
+      const res = await api.post(`/buddy/${id}/requests`, {
         activity: requestForm.activity,
         message: requestForm.message || undefined,
         proposedDate: requestForm.proposedDate,
@@ -70,7 +93,7 @@ export default function BuddyDetailPage() {
         proposedDurationHours: parseFloat(requestForm.proposedDurationHours),
         proposedLocation: requestForm.proposedLocation || undefined,
       });
-      setRequestSent(true);
+      setRequestState(res.data.request || null);
       setShowRequestForm(false);
       setRequestError(null);
     } catch (err: unknown) {
@@ -216,29 +239,49 @@ export default function BuddyDetailPage() {
       )}
 
       {/* Request Sent State */}
-      {requestSent && (
-        <div className="bg-sage-50 border border-sage-200 rounded-3xl p-6 text-center mb-6">
-          <div className="w-16 h-16 bg-sage-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={32} className="text-white" />
+      {requestState && (
+        <div className={`rounded-3xl p-6 text-center mb-6 border ${requestState.status === 'accepted' ? 'bg-sage-50 border-sage-200' : requestState.status === 'rejected' ? 'bg-navy-50 border-navy-200' : 'bg-amber-50 border-amber-200'}`}>
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${requestState.status === 'accepted' ? 'bg-sage-500' : requestState.status === 'rejected' ? 'bg-navy-100' : 'bg-amber-500'}`}>
+            {requestState.status === 'accepted' ? (
+              <CheckCircle size={32} className="text-white" />
+            ) : requestState.status === 'rejected' ? (
+              <X size={32} className="text-navy-400" />
+            ) : (
+              <Clock size={32} className="text-white" />
+            )}
           </div>
-          <h3 className="font-display text-xl text-navy-900 mb-2">Request sent!</h3>
+          <h3 className="font-display text-xl text-navy-900 mb-2">
+            {requestState.status === 'accepted' ? 'Request accepted!' :
+             requestState.status === 'rejected' ? 'Request declined' :
+             'Request sent!'}
+          </h3>
           <p className="text-sm text-navy-500 mb-4">
-            {conversationId ? 'Chat is now available.' : 'Wait for the provider to accept, then you can chat.'}
+            {requestState.status === 'accepted' ? 'You can now chat with this buddy.' :
+             requestState.status === 'rejected' ? 'This buddy is no longer interested.' :
+             'Wait for the provider to accept, then you can chat.'}
           </p>
-          {conversationId ? (
+          {requestState.status === 'accepted' && conversationId ? (
             <button onClick={openChat} className="bg-navy-900 text-cream-50 px-6 py-3 rounded-2xl font-medium hover:bg-navy-800 transition-all btn-press">
               Open Chat
             </button>
+          ) : requestState.status === 'accepted' && !conversationId ? (
+            <button disabled className="bg-navy-200 text-navy-400 px-6 py-3 rounded-2xl font-medium cursor-not-allowed" aria-label="Chat being set up">
+              Setting up chat...
+            </button>
+          ) : requestState.status === 'rejected' ? (
+            <button onClick={() => { setRequestState(null); setConversationId(null); }} className="bg-navy-900 text-cream-50 px-6 py-3 rounded-2xl font-medium hover:bg-navy-800 transition-all btn-press">
+              Try another buddy
+            </button>
           ) : (
-            <button disabled className="bg-navy-200 text-navy-400 px-6 py-3 rounded-2xl font-medium cursor-not-allowed">
-              Waiting for acceptance...
+            <button disabled className="bg-navy-200 text-navy-400 px-6 py-3 rounded-2xl font-medium cursor-not-allowed" aria-label="Waiting for approval">
+              Request sent — waiting for approval
             </button>
           )}
         </div>
       )}
 
       {/* CTA */}
-      {!requestSent && user?.id !== buddy.user_id && (
+      {!requestState && user?.id !== buddy.user_id && (
         <div className="flex gap-3">
           <button
             onClick={() => setShowRequestForm(true)}
@@ -246,7 +289,17 @@ export default function BuddyDetailPage() {
           >
             Request
           </button>
-          <button onClick={openChat} className="w-16 h-16 bg-white border border-navy-100/30 rounded-2xl flex items-center justify-center hover:bg-navy-50 transition-colors">
+          <button
+            onClick={() => {
+              if (conversationId) {
+                navigate(`/messages?conv=${conversationId}`);
+              } else {
+                alert('No chat available right now.');
+              }
+            }}
+            className="w-16 h-16 bg-white border border-navy-100/30 rounded-2xl flex items-center justify-center hover:bg-navy-50 transition-colors"
+            aria-label="Open chat"
+          >
             <MessageCircle size={24} className={conversationId ? 'text-navy-600' : 'text-navy-300'} />
           </button>
         </div>

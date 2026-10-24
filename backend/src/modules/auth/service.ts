@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { query } from '../../lib/db';
 import { config } from '../../lib/config';
 import { AppError } from '../../middleware/errorHandler';
@@ -130,4 +131,80 @@ export async function refreshToken(token: string) {
     if (err instanceof AppError) throw err;
     throw new AppError(401, 'Invalid refresh token');
   }
+}
+
+export async function createTokens(user: { id: string; email: string; name: string }) {
+  return generateTokens({ id: user.id, email: user.email, role: 'user' });
+}
+
+export async function linkOrUpdateGoogleAccount(profile: any, accessToken: string) {
+  const providerId = String(profile.id || profile.sub || '');
+  const email = String(profile.emails?.[0]?.value || profile.email || '').toLowerCase();
+  const name = String(profile.displayName || profile.name?.givenName || 'Google User');
+  const avatarUrl = profile.photos?.[0]?.value || null;
+
+  if (!providerId || !email) {
+    throw new AppError(400, 'Google profile missing required id or email');
+  }
+
+  interface GoogleAccountRow {
+    id: string;
+    user_id: string;
+    email: string;
+    name: string;
+    avatar_url: string | null;
+    access_token: string | null;
+    created_at: string;
+  }
+
+  interface UserRowLite {
+    id: string;
+  }
+
+  const existingAccountRaw = await query(
+    `SELECT ga.id, ga.user_id, ga.email, ga.name, ga.avatar_url, ga.access_token, ga.created_at
+     FROM google_accounts ga
+     JOIN users u ON u.id = ga.user_id
+     WHERE ga.provider_id = $1`,
+    [providerId]
+  );
+
+  const existingAccount: GoogleAccountRow[] = existingAccountRaw.rows as GoogleAccountRow[];
+
+  if (existingAccount.length > 0) {
+    const account = existingAccount[0];
+    await query(
+      `UPDATE google_accounts SET access_token = $1, email = $2, name = $3, avatar_url = $4 WHERE id = $5`,
+      [accessToken, email, name, avatarUrl, account.id]
+    );
+    return { id: account.user_id, email: account.email, name: account.name };
+  }
+
+  const existingUserRaw = await query(
+    `SELECT id FROM users WHERE LOWER(email) = $1`,
+    [email]
+  );
+
+  const existingUser: UserRowLite[] = existingUserRaw.rows as UserRowLite[];
+
+  let userId: string;
+  if (existingUser.length > 0) {
+    userId = existingUser[0].id;
+  } else {
+    userId = uuidv4();
+    await query(
+      `INSERT INTO users (id, email, provider, provider_id, avatar_url)
+       VALUES ($1, $2, 'google', $3, $4)`,
+      [userId, email, providerId, avatarUrl]
+    );
+  }
+
+  await query(
+    `INSERT INTO google_accounts (id, user_id, provider_id, email, name, avatar_url, access_token)
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)
+     ON CONFLICT (provider_id) DO UPDATE SET access_token = EXCLUDED.access_token, email = EXCLUDED.email, name = EXCLUDED.name, avatar_url = EXCLUDED.avatar_url`,
+    [userId, providerId, email, name, avatarUrl, accessToken]
+  );
+
+  return { id: userId, email, name };
 }

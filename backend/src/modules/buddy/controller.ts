@@ -97,6 +97,13 @@ export async function getIncomingRequests(req: AuthRequest, res: Response) {
   res.json({ requests });
 }
 
+export async function getBuddyRequestStatus(req: AuthRequest, res: Response) {
+  const { id, requesterId } = req.query as { id: string; requesterId: string };
+  if (!id || !requesterId) return res.status(400).json({ error: 'id and requesterId query parameters are required' });
+  const request = await buddyService.getBuddyRequestStatus(id, requesterId);
+  res.json({ request });
+}
+
 export async function getRequestById(req: AuthRequest, res: Response) {
   const id = req.params.id as string;
   const request = await buddyService.getRequestById(req.user!.id, id);

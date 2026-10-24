@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { SocialPost, Comment } from '../types';
 import { Heart, MessageCircle, Bookmark, Share2, Plus, X, MapPin, Send, Trash2 } from 'lucide-react';
@@ -20,10 +21,11 @@ const CATEGORY_LABELS: Record<string, { label: string; emoji: string; color: str
 
 export default function HomePage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [showPlan, setShowPlan] = useState(false);
+  const [showLinkup, setShowLinkup] = useState(false);
   const [newPost, setNewPost] = useState({ category: 'general', content: '' });
   const [submitting, setSubmitting] = useState(false);
   const [page, setPage] = useState(1);
@@ -34,6 +36,7 @@ export default function HomePage() {
   // Comment panel state
   const [expandedComments, setExpandedComments] = useState<string | null>(null);
   const [commentsData, setCommentsData] = useState<Record<string, Comment[]>>({});
+  const [commentAuthors, setCommentAuthors] = useState<Record<string, { id: string; name: string; avatar_url?: string }>>({});
   const [commentText, setCommentText] = useState<Record<string, string>>({});
   const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
   const [submittingComment, setSubmittingComment] = useState<Record<string, boolean>>({});
@@ -74,12 +77,12 @@ export default function HomePage() {
   }, [showCreate]);
   // Lock body scroll when plan modal is open
   useEffect(() => {
-    if (showPlan) {
+    if (showLinkup) {
       document.body.style.overflow = 'hidden';
       return () => { document.body.style.overflow = ''; };
     }
     document.body.style.overflow = '';
-  }, [showPlan]);
+  }, [showLinkup]);
 
   const createPost = async () => {
     if (!newPost.content.trim()) return;
@@ -153,8 +156,19 @@ export default function HomePage() {
       };
       setCommentsData(prev => ({
         ...prev,
-        [postId]: [...(prev[postId] || []), newComment],
+        [postId]: [...(prev[postId] ?? []), newComment],
       }));
+      if (newComment.author_id) {
+        const entry = {
+          id: newComment.author_id,
+          name: newComment.author_name || 'User',
+          avatar_url: newComment.author_avatar || undefined,
+        };
+        setCommentAuthors(prev => ({
+          ...prev,
+          [postId]: { ...prev[postId], [newComment.author_id!]: entry },
+        }));
+      }
       setCommentText(prev => ({ ...prev, [postId]: '' }));
       // Update comment count in post list
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments_count: p.comments_count + 1 } : p));
@@ -212,26 +226,37 @@ export default function HomePage() {
           </div>
         ) : comments.length === 0 ? (
           <p className="text-sm text-navy-300 text-center py-3">No comments yet. Be the first to say something.</p>
-        ) : (
-          <div className="space-y-3 mb-4">
+        ) : (          <div className="space-y-3 mb-4">
             {comments.map((comment) => (
               <div key={comment.id} className="flex items-start gap-2.5">
-                <div className="w-7 h-7 bg-navy-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-navy-600 text-[10px] font-medium">{comment.author_name?.charAt(0) || '?'}</span>
-                </div>
+                <Link to={`/profile/${comment.author_id}`} className="block">
+                  <div className="w-7 h-7 bg-navy-100 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-navy-200 transition-colors">
+                    <span className="text-navy-600 text-[10px] font-medium">{comment.author_name?.charAt(0) || '?'}</span>
+                  </div>
+                </Link>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-navy-700">{comment.author_name}</span>
+                  <div className="flex items-center gap-2">                    <Link to={`/profile/${comment.author_id}`} className="text-xs font-semibold text-navy-700 hover:text-navy-900 transition-colors">
+                      {comment.author_name ?? ''}
+                    </Link>
                     <span className="text-[10px] text-navy-300">{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
                     {user?.id === comment.user_id && (
                       <button
                         onClick={() => deleteComment(post.id, comment.id)}
-                        className="text-navy-300 hover:text-red-500 transition-colors ml-auto"
+                        className="text-navy-300 hover:text-red-500 transition-colors"
                         aria-label="Delete comment"
                       >
                         <Trash2 size={12} />
                       </button>
                     )}
+                      {user && comment.author_id && comment.author_id !== user.id && !isRequestButtonVisible(post.id, comment.author_id!) && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/profile/${comment.author_id}?request=1`)}
+                          className="text-amber-600 hover:text-amber-700 text-[10px] font-medium"
+                        >
+                          View profile
+                        </button>
+                      )}
                   </div>
                   <p className="text-sm text-navy-800 mt-0.5 break-words">{comment.content}</p>
                 </div>
@@ -266,6 +291,24 @@ export default function HomePage() {
     );
   };
 
+  // Request-to-chat state is tracked per post so the temporary button does not flash for the same person
+  const requestButtonsInFlight = useRef(new Set<string>());
+
+  const isRequestButtonVisible = (postId: string, authorId: string) => requestButtonsInFlight.current.has(`${postId}:${authorId}`);
+
+  const handleRequestBuddy = async (postId: string, authorId: string, authorName: string) => {
+    const key = `${postId}:${authorId}`;
+    requestButtonsInFlight.current.add(key);
+    try {
+      await api.post('/buddy/request', {
+        buddy_profile_id: authorId,          message: `Lets chat about your post`,
+      });
+    } catch {
+    } finally {
+      requestButtonsInFlight.current.delete(key);
+    }
+  };
+
   // Render different card styles based on post category
   const renderPostCard = (post: SocialPost, index: number) => {
     const cat = CATEGORY_LABELS[post.category] || CATEGORY_LABELS.general;
@@ -287,32 +330,43 @@ export default function HomePage() {
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-navy-900 rounded-full flex items-center justify-center">
                   <span className="text-cream-50 font-medium text-sm">{post.author_name?.charAt(0) || '?'}</span>
+                </div>              <div className="flex-1">
+                <Link to={`/profile/${post.author_id}`} className="font-semibold text-navy-900 text-sm hover:text-navy-700 transition-colors">                      {post.author_name ?? ''}
+                </Link>
+
+
+                <div className="flex items-center gap-2 text-xs text-navy-400">
+                  <span>{post.author_city || 'Dehradun'}</span>
+                  <span>·</span>
+                  <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
                 </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-navy-900 text-sm">{post.author_name}</p>
-                  <div className="flex items-center gap-2 text-xs text-navy-400">
-                    <span>{post.author_city || 'Dehradun'}</span>
-                    <span>·</span>
-                    <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
-                  </div>
-                </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${cat.color}`}>
-                  {cat.emoji} {cat.label}
-                </span>
               </div>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${cat.color}`}>
+                {cat.emoji} {cat.label}
+              </span>
+            </div>
 
-              <h2 className="font-display text-display-md text-navy-900 leading-tight mb-4">
-                {post.content}
-              </h2>
+            <h2 className="font-display text-display-md text-navy-900 leading-tight mb-4">
+              {post.content}
+            </h2>
 
-              {post.location_name && (
-                <div className="flex items-center gap-1.5 text-sm text-navy-400 mb-4">
-                  <MapPin size={14} />
-                  <span>{post.location_name}</span>
-                </div>
-              )}
+            {post.location_name && (
+              <div className="flex items-center gap-1.5 text-sm text-navy-400 mb-4">
+                <MapPin size={14} />
+                <span>{post.location_name}</span>
+              </div>
+            )}
 
-              <div className="flex items-center gap-4 pt-4 border-t border-navy-100/30">
+            <div className="flex items-center gap-4 pt-4 border-t border-navy-100/30">
+                {user && post.user_id !== user.id && (
+                  <button
+                    type="button"
+                    onClick={() => handleRequestBuddy(post.id, post.author_id!, post.author_name!)}
+                    className="text-xs text-amber-600 hover:text-amber-700 font-medium"
+                  >
+                    Request to chat
+                  </button>
+                )}
                 <button onClick={() => toggleLike(post.id)}
                   className={`flex items-center gap-1.5 text-sm transition-colors ${post.isLiked ? 'text-coral-500' : 'text-navy-400 hover:text-coral-500'}`}>
                   <Heart size={18} fill={post.isLiked ? 'currentColor' : 'none'} />
@@ -337,6 +391,7 @@ export default function HomePage() {
                   </button>
                 )}
               </div>
+
             </div>
           </div>
           {renderCommentPanel(post)}
@@ -353,13 +408,27 @@ export default function HomePage() {
               <div className="w-8 h-8 bg-navy-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-navy-600 text-xs font-medium">{post.author_name?.charAt(0) || '?'}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-navy-700">{post.author_name}</span>
+              <div className="flex-1 min-w-0">                  <div className="flex items-center gap-2 mb-1">
+                  <Link to={`/profile/${post.author_id}`} className="text-xs font-medium text-navy-700 hover:text-navy-900 transition-colors">
+                    {post.author_name}
+                  </Link>
                   <span className="text-xs text-navy-300">· {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
                 </div>
                 <p className="text-sm text-navy-800 line-clamp-2">{post.content}</p>
                 <div className="flex items-center gap-3 mt-2 text-xs text-navy-400">
+                  {user && post.user_id !== user.id && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const authorId = post.author_id;
+                        if (!authorId) return;
+                        handleRequestBuddy(post.id, authorId, post.author_name!);
+                      }}
+                      className="text-amber-600 hover:text-amber-700 font-medium"
+                    >
+                      Request to chat
+                    </button>
+                  )}
                   <button onClick={() => toggleLike(post.id)} className={`flex items-center gap-1 transition-colors ${post.isLiked ? 'text-coral-500' : ''}`}><Heart size={12} /> {post.likes_count}</button>
                   <button onClick={() => toggleComments(post.id)} className={`flex items-center gap-1 transition-colors ${expandedComments === post.id ? 'text-navy-700' : ''}`}><MessageCircle size={12} /> {post.comments_count}</button>
                 </div>
@@ -381,7 +450,10 @@ export default function HomePage() {
                 <span className="text-cream-50 font-medium text-sm">{post.author_name?.charAt(0) || '?'}</span>
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-navy-900 text-sm">{post.author_name}</p>
+                <Link to={`/profile/${post.author_id}`} className="font-semibold text-navy-900 text-sm hover:text-navy-700 transition-colors">                      {post.author_name ?? ''}
+                </Link>
+
+
                 <div className="flex items-center gap-2 text-xs text-navy-400">
                   <span>{post.author_city || 'Dehradun'}</span>
                   <span>·</span>
@@ -404,6 +476,18 @@ export default function HomePage() {
           </div>
 
           <div className="px-5 py-3 border-t border-navy-100/20 flex items-center gap-5">
+          </div>
+
+          <div className="px-5 py-3 border-t border-navy-100/20 flex items-center gap-5">
+            {user && post.user_id !== user.id && (
+              <button
+                type="button"
+                onClick={() => handleRequestBuddy(post.id, post.author_id!, post.author_name!)}
+                className="text-xs text-amber-600 hover:text-amber-700 font-medium"
+              >
+                Request to chat
+              </button>
+            )}
             <button onClick={() => toggleLike(post.id)}
               className={`flex items-center gap-1.5 text-sm transition-colors ${post.isLiked ? 'text-coral-500' : 'text-navy-400 hover:text-coral-500'}`}>
               <Heart size={18} fill={post.isLiked ? 'currentColor' : 'none'} />
@@ -446,12 +530,7 @@ export default function HomePage() {
 
       {/* Category filters */}
       <div className="flex gap-2 mb-6 overflow-x-auto activity-scroll pb-1 -mx-4 px-4">
-        <button onClick={() => window.location.href = '/linkup'}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 btn-press ${
-            'bg-navy-900 text-cream-50'
-          }`}>
-          Linkup
-        </button>
+
         <button onClick={() => setFilter('')}
           className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 btn-press ${
             !filter ? 'bg-navy-900 text-cream-50' : 'bg-white text-navy-500 hover:bg-navy-50 shadow-soft'
@@ -525,9 +604,20 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Create plan modal */}
-      {showPlan && (
-        <CreatePlanModal onClose={() => setShowPlan(false)} />
+      {/* Linkup modal — create a new Linkup post */}
+      {showLinkup && (
+        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl p-6 animate-slide-up max-h-[90dvh] sm:max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between mb-5 flex-shrink-0">
+              <h2 className="font-display text-display-sm text-navy-900">Create Linkup</h2>
+              <button onClick={() => setShowLinkup(false)} className="p-2 hover:bg-navy-50 rounded-xl transition-colors" aria-label="Close">
+                <X size={20} className="text-navy-400" />
+              </button>
+            </div>
+
+            <CreatePlanModal onClose={() => setShowLinkup(false)} />
+          </div>
+        </div>
       )}
 
       {/* Posts feed with varied visual density */}
@@ -592,15 +682,26 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Floating Create Button */}
-      <button
-        onClick={() => setShowCreate(true)}
-        className="fixed bottom-24 right-4 sm:right-auto sm:ml-[22rem] bg-navy-900 text-cream-50 rounded-2xl px-5 py-3 shadow-lifted hover:bg-navy-800 transition-all duration-200 btn-press flex items-center gap-2 z-40"
-      >
-        <Plus size={18} />
-        <span className="text-sm font-medium hidden sm:inline">WHAT'S HAPPENING?</span>
-        <span className="text-sm font-medium sm:hidden">Post</span>
-      </button>
+      {/* Floating Create Buttons — Post first, Linkup to the left of it */}
+      <div className="fixed inset-x-4 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] flex flex-col-reverse items-stretch justify-end gap-3 px-4 pt-4 z-40">
+        <button
+          type="button"
+          className="bg-navy-900 text-cream-50 shrink-0 rounded-2xl px-3 py-3 shadow-lifted hover:bg-navy-800 active:bg-navy-800 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press flex items-center justify-center text-sm font-medium"
+          aria-label="Create post"
+        >
+          <Plus size={18} />
+          Post
+        </button>
+        <button
+          type="button"
+          className="bg-navy-900 text-cream-50 shrink-0 rounded-2xl px-3 py-3 shadow-lifted hover:bg-navy-800 active:bg-navy-800 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press flex items-center justify-center text-sm font-medium"
+          aria-label="Open linkup"
+          onClick={() => setShowLinkup(true)}
+          style={{ marginLeft: "0.75rem" }}
+        >
+          Linkup
+        </button>
+      </div>
     </div>
   );
 }

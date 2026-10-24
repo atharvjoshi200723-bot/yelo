@@ -21,6 +21,7 @@ export interface User {
 export interface SocialPost {
   id: string;
   user_id: string;
+  author_id?: string;
   category: string;
   title?: string;
   content: string;
@@ -41,6 +42,7 @@ export interface Comment {
   id: string;
   post_id: string;
   user_id: string;
+  author_id?: string;
   content: string;
   is_anonymous?: boolean;
   author_name?: string;
@@ -130,19 +132,14 @@ export interface BuddyRequest {
   requester_id: string;
   provider_id: string;
   activity: string;
-  message?: string;
+  message: string | null;
   proposed_date: string;
   proposed_time: string;
   proposed_duration_hours: number;
-  proposed_location?: string;
-  status: string;
-  agreed_price?: number;
-  buddy_title?: string;
-  activities?: string[];
-  provider_name?: string;
-  provider_avatar?: string;
-  requester_name?: string;
-  requester_avatar?: string;
+  proposed_location: string | null;
+  status: 'pending' | 'accepted' | 'rejected';
+  agreed_price: number | null;
+  conversation_id: string | null;
   created_at: string;
 }
 

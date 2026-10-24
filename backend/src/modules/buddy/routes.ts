@@ -21,6 +21,7 @@ router.get('/my-requests', authenticate, asyncHandler(controller.getMyRequests))
 router.get('/incoming-requests', authenticate, asyncHandler(controller.getIncomingRequests));
 router.get('/requests/:id', authenticate, asyncHandler(controller.getRequestById));
 router.get('/:id', authenticate, asyncHandler(controller.getBuddy));
+router.get('/:id/request-status', authenticate, asyncHandler(controller.getBuddyRequestStatus));
 router.post('/:id/requests', authenticate, buddyRequestLimiter, asyncHandler(controller.createRequest));
 router.put('/requests/:id/respond', authenticate, asyncHandler(controller.respondToRequest));
 

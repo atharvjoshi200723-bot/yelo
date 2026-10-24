@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { BuddyProfile } from '../types';
-import { Star, MapPin, Shield, CheckCircle, ArrowLeft, ChevronRight, UserPlus, Search } from 'lucide-react';
+import { BuddyProfile, BuddyRequest } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { Star, MapPin, Shield, CheckCircle, ArrowLeft, ChevronRight, UserPlus, Search, Send, MessageCircle } from 'lucide-react';
 import { ErrorState, FeedSkeleton } from '../components/ui/FeedbackStates';
 
 const ACTIVITIES = [
@@ -30,6 +31,8 @@ const SORT_OPTIONS = [
 ];
 
 export default function BuddyPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [buddies, setBuddies] = useState<BuddyProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +44,7 @@ export default function BuddyPage() {
   const [view, setView] = useState<'home' | 'find' | 'results'>(
     searchParams.get('activity') ? 'results' : 'home'
   );
+  const [buddyRequestStatus, setBuddyRequestStatus] = useState<Record<string, BuddyRequest | null>>({});
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -51,9 +55,7 @@ export default function BuddyPage() {
     } else {
       setUserLocation({ lat: 30.3165, lng: 78.0322 });
     }
-  }, []);
-
-  const fetchBuddies = async (buddyType?: string, activity?: string) => {
+  }, []);  const fetchBuddies = async (buddyType?: string, activity?: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -65,13 +67,138 @@ export default function BuddyPage() {
       if (buddyType) params.buddyType = buddyType;
       if (activity) params.activity = activity;
       const res = await api.get('/buddy/search', { params });
-      setBuddies(res.data.buddies || []);
+      const buddies = res.data.buddies || [];
+      setBuddies(buddies);
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { error?: string } } };
       setError(apiErr.response?.data?.error || 'Failed to load buddies');
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const statusUpdates: Record<string, BuddyRequest | null> = {};
+      for (const buddy of buddies) {
+        if (buddy.user_id === user.id) continue;
+        try {
+          const statusRes = await api.get(`/buddy/${buddy.id}/request-status`, { params: { requesterId: user.id } });
+          statusUpdates[buddy.id] = statusRes.data.request || null;
+        } catch {
+          statusUpdates[buddy.id] = null;
+        }
+      }
+      if (!cancelled) setBuddyRequestStatus(prev => ({ ...prev, ...statusUpdates }));
+    })();
+    return () => { cancelled = true; };
+  }, [buddies, user]);
+
+  // Shared helper for buddy card + detail chat/request buttons
+  const openBuddyChat = (buddyId: string, conversationId: string | null) => {
+    if (conversationId) {
+      navigate(`/messages?conv=${conversationId}`);
+    } else {
+      navigate(`/buddy/${buddyId}`);
+    }
+  };
+
+  // Keep request statuses in sync with the current results list
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    const refreshFromApi = async () => {
+      if (cancelled) return;
+      const statusUpdates: Record<string, BuddyRequest | null> = {};
+      for (const buddy of buddies) {
+        if (buddy.user_id === user.id) continue;
+        try {
+          const statusRes = await api.get(`/buddy/${buddy.id}/request-status`, { params: { requesterId: user.id } });
+          statusUpdates[buddy.id] = statusRes.data.request || null;
+        } catch {
+          statusUpdates[buddy.id] = null;
+        }
+      }
+      setBuddyRequestStatus(prev => ({ ...prev, ...statusUpdates }));
+    };
+
+    refreshFromApi();
+    return () => { cancelled = true; };
+  }, [buddies, user]);
+
+  // Automatically refresh request statuses after the buddy list is populated and whenever it changes.
+  // This keeps the card labels (Send request / Request sent / Chat) up to date after a request is sent
+  // or accepted, including when the user returns from the buddy detail page.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    const refreshStatuses = async () => {
+      if (cancelled) return;
+      const statusUpdates: Record<string, BuddyRequest | null> = {};
+      for (const buddy of buddies) {
+        if (buddy.user_id === user.id) continue;
+        try {
+          const statusRes = await api.get(`/buddy/${buddy.id}/request-status`, { params: { requesterId: user.id } });
+          statusUpdates[buddy.id] = statusRes.data.request || null;
+        } catch {
+          statusUpdates[buddy.id] = null;
+        }
+      }
+      setBuddyRequestStatus(prev => ({ ...prev, ...statusUpdates }));
+    };
+
+    refreshStatuses();
+    return () => { cancelled = true; };
+  }, [buddies, user]);
+
+  // After coming back from a buddy detail page, give the UI a moment to settle before re-checking statuses,
+  // so a newly sent or accepted request shows the updated label on the card.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    const afterNavigationRefresh = async () => {
+      // Let BuddyPage finish its re-render after the route change before we mutate card labels
+      await new Promise(resolve => setTimeout(resolve, 450));
+      if (cancelled) return;
+      const statusUpdates: Record<string, BuddyRequest | null> = {};
+      for (const buddy of buddies) {
+        if (buddy.user_id === user.id) continue;
+        try {
+          const statusRes = await api.get(`/buddy/${buddy.id}/request-status`, { params: { requesterId: user.id } });
+          statusUpdates[buddy.id] = statusRes.data.request || null;
+        } catch {
+          statusUpdates[buddy.id] = null;
+        }
+      }
+      setBuddyRequestStatus(prev => ({ ...prev, ...statusUpdates }));
+    };
+
+    afterNavigationRefresh();
+    return () => { cancelled = true; };
+  }, [buddies, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const mounted = true;
+    (async () => {
+      const statusUpdates: Record<string, BuddyRequest | null> = {};
+      for (const buddy of buddies) {
+        if (buddy.user_id === user.id) continue;
+        try {
+          const statusRes = await api.get(`/buddy/${buddy.id}/request-status`, { params: { requesterId: user.id } });
+          statusUpdates[buddy.id] = statusRes.data.request || null;
+        } catch {
+          statusUpdates[buddy.id] = null;
+        }
+      }
+      if (mounted) setBuddyRequestStatus(prev => ({ ...prev, ...statusUpdates }));
+    })();
+    return () => { /* no-op */ };
+  }, [buddies, user]);
 
   useEffect(() => {
     if (view === 'results') {
@@ -209,9 +336,8 @@ export default function BuddyPage() {
       {/* RESULTS VIEW — Buddy cards */}
       {view === 'results' && (
         <div>
-          <div className="mb-4">
-            <h2 className="font-display text-2xl text-navy-900">
-              {selectedActivity}
+          <div className="mb-4">              <h2 className="font-display text-2xl text-navy-900">
+              {selectedActivity || 'Buddies nearby'}
             </h2>
             <p className="text-sm text-navy-400 mt-1">
               {loading ? 'Searching...' : error ? '' : `${buddies.length} people nearby`}
@@ -304,6 +430,40 @@ export default function BuddyPage() {
                           {buddy.location_name || 'Dehradun'}
                         </span>
                       </div>
+
+                      {/* Request status / action */}
+                      {user?.id !== buddy.user_id && (
+                        <div className="mt-3 flex items-center gap-2">
+                          {(() => {
+                            const request = buddyRequestStatus[buddy.id] || null;
+                            if (request?.status === 'accepted') {
+                              return (
+                                <button
+                                  onClick={e => { e.preventDefault(); openBuddyChat(buddy.id, request.conversation_id ?? null); }}
+                                  className="inline-flex items-center gap-1.5 text-xs font-medium bg-sage-600 text-white px-3 py-1.5 rounded-full hover:bg-sage-700 transition-colors"
+                                >
+                                  <MessageCircle size={12} /> Chat
+                                </button>
+                              );
+                            }
+                            if (request) {
+                              return (
+                                <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-amber-100 text-amber-800 px-3 py-1.5 rounded-full">
+                                  <Send size={12} /> Request sent
+                                </span>
+                              );
+                            }
+                            return (
+                              <button
+                                onClick={e => { e.preventDefault(); openBuddyChat(buddy.id, null); }}
+                                className="inline-flex items-center gap-1.5 text-xs font-medium bg-navy-900 text-cream-50 px-3 py-1.5 rounded-full hover:bg-navy-800 transition-colors"
+                              >
+                                <Send size={12} /> Send request
+                              </button>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>

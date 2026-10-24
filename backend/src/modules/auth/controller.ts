@@ -40,3 +40,11 @@ export async function getMe(req: AuthRequest, res: Response) {
   const user = result.rows[0] as Record<string, unknown>;
   res.json({ user });
 }
+
+export async function signTokens(user: { id: string; email: string; name: string }) {
+  return authService.createTokens(user);
+}
+
+export async function linkOrUpdateGoogleAccount(profile: any, accessToken: string) {
+  return authService.linkOrUpdateGoogleAccount(profile, accessToken);
+}

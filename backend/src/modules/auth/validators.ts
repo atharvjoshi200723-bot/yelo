@@ -34,3 +34,8 @@ export const updateProfileSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+export interface Tokens {
+  accessToken: string;
+  refreshToken: string;
+}

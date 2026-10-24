@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../lib/api';
 import { User, Review } from '../types';
@@ -14,6 +14,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isOwnProfile = !userId || userId === currentUser?.id;
+
+  const requestEnabledRef = useRef(false);
 
   useEffect(() => {
     const id = userId || currentUser?.id;
@@ -33,6 +35,18 @@ export default function ProfilePage() {
       setLoading(false);
     });
   }, [userId, currentUser]);
+
+  useEffect(() => {
+    if (isOwnProfile) return;
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get('request') === '1';
+    if (!requested) return;
+    if (!currentUser) return;
+    requestEnabledRef.current = true;
+    const idToRequest = userId || currentUser.id;
+    if (!idToRequest || idToRequest === currentUser.id) return;
+    api.post('/buddy/request', { buddy_profile_id: idToRequest, message: 'Lets chat about your post' }).catch(() => {});
+  }, [userId, isOwnProfile, currentUser]);
 
   if (loading) return (
     <div className="max-w-2xl mx-auto">
@@ -85,6 +99,17 @@ export default function ProfilePage() {
               <p className="text-sm text-navy-400">{profile.email}</p>
             </div>
           </div>
+
+          {!isOwnProfile && (
+            <div className="mt-4 mb-2">
+              <button
+                onClick={() => api.post('/buddy/request', { buddy_profile_id: profile.id, message: 'Lets chat about your post' }).catch(() => {})}
+                className="text-xs text-amber-600 hover:text-amber-700 font-medium"
+              >
+                Request to chat
+              </button>
+            </div>
+          )}
 
           <div className="mt-4 space-y-2">
             {profile.city && (

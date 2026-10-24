@@ -347,6 +347,23 @@ export async function getIncomingRequests(userId: string) {
   return result.rows;
 }
 
+export async function getBuddyRequestStatus(buddyProfileId: string, requesterId: string) {
+  const result = await query(
+    `SELECT id, status, conversation_id FROM buddy_requests
+     WHERE buddy_profile_id = $1 AND requester_id = $2
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [buddyProfileId, requesterId]
+  );
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0] as Record<string, unknown>;
+  return {
+    id: row.id as string,
+    status: row.status as string,
+    conversation_id: row.conversation_id as string | null,
+  };
+}
+
 export async function getRequestById(userId: string, requestId: string) {
   const result = await query(
     `SELECT br.*, bp.title as buddy_title, bp.activities, bp.buddy_type,

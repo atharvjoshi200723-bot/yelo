@@ -41,4 +41,12 @@ export const config = {
     windowMs: parseInt(process.env.REGISTER_RATE_LIMIT_WINDOW_MS || '3600000', 10),
     max: parseInt(process.env.REGISTER_RATE_LIMIT_MAX || '10', 10),
   },
+  google: {
+    enabled: process.env.GOOGLE_OAUTH_ENABLED === 'true',
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/auth/google/callback',
+    issuer: process.env.GOOGLE_ISSUER || 'https://accounts.google.com',
+    jwksUri: process.env.GOOGLE_JWKS_URI || 'https://www.googleapis.com/oauth2/v3/certs',
+  },
 };
