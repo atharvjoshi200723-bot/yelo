@@ -682,12 +682,12 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Floating actions — compact Post button bottom right, Linkup stacked above it */}
-      <div className="fixed right-4 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] flex flex-col items-end gap-3 z-40">
+      {/* Floating actions — small Post button bottom right (WhatsApp style), Linkup stacked just above it */}
+      <div className="fixed right-4 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] flex flex-col items-end gap-2 z-40">
         <button
           type="button"
           onClick={() => setShowLinkup(true)}
-          className="rounded-full bg-amber-500 text-navy-900 px-3.5 py-2 text-xs font-semibold shadow-lifted hover:bg-amber-400 active:bg-amber-400 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press"
+          className="rounded-md bg-navy-900 text-cream-50 px-2.5 py-1 text-[11px] font-semibold tracking-wide shadow-soft hover:bg-navy-800 active:bg-navy-800 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press"
           aria-label="Open linkup"
         >
           Linkup
@@ -695,10 +695,10 @@ export default function HomePage() {
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="w-14 h-14 rounded-full bg-navy-900 text-cream-50 shadow-lifted hover:bg-navy-800 active:bg-navy-800 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press flex items-center justify-center"
+          className="w-11 h-11 rounded-full bg-navy-900 text-cream-50 shadow-lifted hover:bg-navy-800 active:bg-navy-800 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press flex items-center justify-center"
           aria-label="Create post"
         >
-          <Plus size={24} />
+          <Plus size={18} />
         </button>
       </div>
     </div>
