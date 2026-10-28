@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { BuddyProfile, BuddyRequest } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { Star, MapPin, Shield, CheckCircle, ArrowLeft, ChevronRight, UserPlus, Search, Send, MessageCircle } from 'lucide-react';
+import { Star, MapPin, CheckCircle, ArrowLeft, ChevronRight, UserPlus, Search, Send, MessageCircle } from 'lucide-react';
 import { ErrorState, FeedSkeleton } from '../components/ui/FeedbackStates';
 
 const ACTIVITIES = [
@@ -294,15 +294,6 @@ export default function BuddyPage() {
                 <ChevronRight size={20} className="text-navy-300" />
               </div>
             </Link>
-          </div>
-
-          {/* Safety Notice */}
-          <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3">
-            <Shield size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-navy-600 leading-relaxed">
-              <p className="font-semibold mb-1">Social companionship only</p>
-              <p>Meet in public places. No sexual services. 18+ for dating-style companionship.</p>
-            </div>
           </div>
         </div>
       )}
