@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { RentalListing } from '../types';
+import { RentalListing, RentalRequest } from '../types';
 import { MapPin, Calendar, DollarSign, MessageCircle, ArrowLeft, ChevronDown, Star, Flag, CheckCircle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ReportModal from '../components/moderation/ReportModal';
@@ -73,20 +73,38 @@ export default function RentDetailPage() {
     setSubmitting(false);
   };
 
-  const openChat = () => {
+  const [incomingRequest, setIncomingRequest] = useState<RentalRequest | null>(null);
+
+  // Check incoming requests if current user is owner
+  useEffect(() => {
+    if (!id || !user || !listing || user.id !== listing.owner_id) return;
+    api.get('/rentals/incoming-requests').then(res => {
+      const requests = res.data.requests || [];
+      const match = requests.find((r: RentalRequest) => r.listing_id === id && r.status === 'pending');
+      if (match) {
+        setIncomingRequest(match);
+      }
+    }).catch(() => {});
+  }, [id, user, listing]);
+
+  const openChat = async () => {
     if (conversationId) {
       navigate(`/messages?conv=${conversationId}`);
-    } else if (listing?.owner_id) {
-      // Try to find conversation first
-      api.get(`/messages/find?userId=${listing.owner_id}&type=rental`).then(r => {
-        if (r.data.conversationId) {
-          navigate(`/messages?conv=${r.data.conversationId}`);
-        } else {
-          alert('Chat is not available yet. The owner needs to accept your request first.');
+      return;
+    }
+    if (listing?.owner_id) {
+      try {
+        const res = await api.post('/messages', {
+          otherUserId: listing.owner_id,
+          type: 'rental',
+          title: listing.title,
+        });
+        if (res.data.id) {
+          navigate(`/messages?conv=${res.data.id}`);
         }
-      }).catch(() => {
-        alert('Unable to open chat. Please try again later.');
-      });
+      } catch {
+        alert('Unable to open chat right now. Please try again.');
+      }
     }
   };
 
@@ -100,6 +118,22 @@ export default function RentDetailPage() {
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-navy-400 hover:text-navy-600 mb-4 text-sm font-medium transition-colors">
         <ArrowLeft size={16} /> Back
       </button>
+
+      {/* Owner review request banner */}
+      {isOwner && incomingRequest && (
+        <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 mb-5 flex items-center justify-between gap-3 animate-fade-in shadow-soft">
+          <div className="min-w-0">
+            <p className="font-semibold text-amber-900 text-sm">New Rental Request</p>
+            <p className="text-xs text-amber-700 truncate">{incomingRequest.requester_name || 'Someone'} requested to rent this item</p>
+          </div>
+          <button
+            onClick={() => navigate(`/rentals/requests/${incomingRequest.id}`)}
+            className="px-4 py-2 bg-navy-900 text-cream-50 rounded-xl text-xs font-semibold hover:bg-navy-800 transition-colors btn-press flex-shrink-0"
+          >
+            Review Request
+          </button>
+        </div>
+      )}
 
       {/* Image */}
       <div className="bg-white rounded-3xl shadow-soft overflow-hidden mb-6">

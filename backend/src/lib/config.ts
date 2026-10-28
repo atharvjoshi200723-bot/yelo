@@ -1,6 +1,14 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Render, Vercel and local .env files disagree about whether a flag is "on" —
+// accept the usual spellings instead of only the literal string 'true'.
+const isTruthy = (value: string | undefined): boolean =>
+  ['true', '1', 'yes', 'on'].includes((value ?? '').trim().toLowerCase());
+
+const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+
 export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -43,9 +51,16 @@ export const config = {
     max: parseInt(process.env.REGISTER_RATE_LIMIT_MAX || '10', 10),
   },
   google: {
-    enabled: process.env.GOOGLE_OAUTH_ENABLED === 'true',
-    clientId: process.env.GOOGLE_CLIENT_ID || '',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    // Register the OAuth routes whenever credentials exist, not only when
+    // GOOGLE_OAUTH_ENABLED is spelled exactly "true" — a missing flag used to
+    // unregister /api/auth/google and return a bare 404. An explicit false
+    // still wins over the credentials fallback.
+    enabled:
+      process.env.GOOGLE_OAUTH_ENABLED
+        ? isTruthy(process.env.GOOGLE_OAUTH_ENABLED)
+        : Boolean(googleClientId && googleClientSecret),
+    clientId: googleClientId,
+    clientSecret: googleClientSecret,
     redirectUri:
       process.env.GOOGLE_REDIRECT_URI ||
       `${process.env.API_URL || 'http://localhost:3001'}/api/auth/google/callback`,

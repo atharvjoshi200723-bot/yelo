@@ -11,7 +11,7 @@ const navItems = [
 
 export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-navy-100/30 z-50 safe-area-bottom" aria-label="Main navigation">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-navy-100/30 z-40 safe-area-bottom" aria-label="Main navigation">
       <div className="max-w-lg mx-auto flex items-center justify-around py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {navItems.map(item => (
           <NavLink

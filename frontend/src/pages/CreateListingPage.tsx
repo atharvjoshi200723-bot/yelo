@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { ImagePicker } from '../components/ui/ImagePicker';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '../lib/api';
 import { ArrowLeft } from 'lucide-react';
 import { ErrorState } from '../components/ui/FeedbackStates';
@@ -11,9 +12,14 @@ const MIN_DESCRIPTION = 10;
 
 export default function CreateListingPage() {
   const navigate = useNavigate();
+  // /rent/edit/:id reuses this form to edit an existing listing.
+  const { id: editId } = useParams<{ id: string }>();
+  const isEditing = Boolean(editId);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [listingLoading, setListingLoading] = useState(isEditing);
+  const [listingError, setListingError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
@@ -21,6 +27,7 @@ export default function CreateListingPage() {
     pricePerWeek: '', pricePerMonth: '', deposit: '', negotiable: true,
     condition: 'good', locationName: '', availableFrom: '', availableUntil: '',
   });
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   useEffect(() => {
     api.get('/rentals/categories').then(res => {
@@ -32,6 +39,35 @@ export default function CreateListingPage() {
       setCategoriesLoading(false);
     });
   }, []);
+
+  // Editing: load the listing and fill the form with what is already there.
+  useEffect(() => {
+    if (!editId) return;
+    setListingLoading(true);
+    api.get(`/rentals/${editId}`).then(res => {
+      const listing = res.data.listing;
+      if (!listing) {
+        setListingError('This listing no longer exists');
+        return;
+      }
+      setForm({
+        categoryId: listing.category_id || '',
+        title: listing.title || '',
+        description: listing.description || '',
+        pricePerDay: listing.price_per_day != null ? String(listing.price_per_day) : '',
+        pricePerWeek: listing.price_per_week != null ? String(listing.price_per_week) : '',
+        pricePerMonth: listing.price_per_month != null ? String(listing.price_per_month) : '',
+        deposit: listing.deposit != null ? String(listing.deposit) : '',
+        negotiable: Boolean(listing.negotiable),
+        condition: listing.condition || 'good',
+        locationName: listing.location_name || '',
+        availableFrom: listing.available_from ? String(listing.available_from).slice(0, 10) : '',
+        availableUntil: listing.available_until ? String(listing.available_until).slice(0, 10) : '',
+      });
+      setImageUrls(listing.image_urls || []);
+    }).catch(() => setListingError('Failed to load this listing'))
+      .finally(() => setListingLoading(false));
+  }, [editId]);
 
   const update = (field: string, value: string | boolean) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -84,8 +120,11 @@ export default function CreateListingPage() {
         locationName: form.locationName.trim() || 'Dehradun',
         availableFrom: form.availableFrom,
         availableUntil: form.availableUntil || undefined,
+        imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
       };
-      const res = await api.post('/rentals', data);
+      const res = isEditing
+        ? await api.put(`/rentals/${editId}`, data)
+        : await api.post('/rentals', data);
       navigate(`/rent/${res.data.listing.id}`);
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { error?: string; code?: string; fields?: Record<string, string> } } };
@@ -96,7 +135,7 @@ export default function CreateListingPage() {
         setFieldErrors(data.fields);
         setError(data.error || 'Please fix the highlighted fields below.');
       } else {
-        setError(data?.error || 'Failed to create listing. Please try again.');
+        setError(data?.error || `Failed to ${isEditing ? 'save' : 'create'} listing. Please try again.`);
       }
     }
     setLoading(false);
@@ -111,7 +150,9 @@ export default function CreateListingPage() {
       </button>
 
       <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h1 className="text-2xl font-bold text-slate-900 mb-6">List an Item for Rent</h1>
+        <h1 className="text-2xl font-bold text-slate-900 mb-6">
+          {isEditing ? 'Edit Listing' : 'List an Item for Rent'}
+        </h1>
 
         {error && (
           <div className="mb-4 p-3 bg-coral-50 border border-coral-200 rounded-xl">
@@ -120,7 +161,15 @@ export default function CreateListingPage() {
           </div>
         )}
 
-        {categoriesLoading ? (
+        {listingLoading ? (
+          <div className="space-y-4">
+            {[1,2,3].map(i => <div key={i} className="h-12 skeleton rounded-xl" />)}
+          </div>
+        ) : listingError ? (
+          <div className="mb-4 p-3 bg-coral-50 border border-coral-200 rounded-xl">
+            <p className="text-sm text-coral-600">{listingError}</p>
+          </div>
+        ) : categoriesLoading ? (
           <div className="space-y-4">
             {[1,2,3].map(i => <div key={i} className="h-12 skeleton rounded-xl" />)}
           </div>
@@ -178,6 +227,11 @@ export default function CreateListingPage() {
                 {form.description.trim().length} / {MIN_DESCRIPTION}
               </p>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Photos</label>
+            <ImagePicker value={imageUrls} onChange={setImageUrls} max={5} />
           </div>
 
           <div>
@@ -256,7 +310,7 @@ export default function CreateListingPage() {
 
           <button type="submit" disabled={loading || !isFormValid}
             className="w-full bg-brand-600 text-white py-3 rounded-xl font-medium hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            {loading ? 'Creating...' : 'Create Listing'}
+            {loading ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Listing')}
           </button>
         </form>
         )}

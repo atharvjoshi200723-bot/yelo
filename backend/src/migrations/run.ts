@@ -439,6 +439,45 @@ CREATE TABLE IF NOT EXISTS commission_config (
 );
 
 -- ============================================================
+-- LINKUP PLAN PARTICIPANTS (join tracking for plan posts)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS plan_participants (
+  post_id UUID NOT NULL REFERENCES social_posts(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (post_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_plan_participants_user ON plan_participants(user_id);
+
+-- Join requests: a member asks to join, the plan's creator accepts. Only an
+-- accepted member counts toward the participant total.
+CREATE TABLE IF NOT EXISTS plan_join_requests (
+  post_id UUID NOT NULL REFERENCES social_posts(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  requested_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (post_id, user_id)
+);
+
+-- Forum posts and comments can carry images
+ALTER TABLE forum_posts ADD COLUMN IF NOT EXISTS image_urls TEXT[];
+ALTER TABLE forum_comments ADD COLUMN IF NOT EXISTS image_urls TEXT[];
+
+-- Colleges get an explicit strip order (matches forum_categories.sort_order)
+ALTER TABLE colleges ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 100;
+
+-- Requested order: Graphic Era Deemed → UPES → Graphic Era Hill → DIT → DAV
+UPDATE colleges SET sort_order = CASE slug
+  WHEN 'gedu' THEN 1
+  WHEN 'upes' THEN 2
+  WHEN 'gehu' THEN 3
+  WHEN 'dit'  THEN 4
+  WHEN 'dav'  THEN 5
+  ELSE 100
+END;
+
+-- ============================================================
 -- ADD MISSING COLUMNS TO EXISTING TABLES (safe additive)
 -- ============================================================
 

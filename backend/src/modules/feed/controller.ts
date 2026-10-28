@@ -33,6 +33,32 @@ export async function savePost(req: AuthRequest, res: Response) {
   res.json(result);
 }
 
+export async function requestJoin(req: AuthRequest, res: Response) {
+  const id = req.params.id as string;
+  const result = await feedService.requestJoin(req.user!.id, id);
+  res.json(result);
+}
+
+export async function getJoinRequests(req: AuthRequest, res: Response) {
+  const id = req.params.id as string;
+  const result = await feedService.getJoinRequests(req.user!.id, id);
+  res.json(result);
+}
+
+export async function acceptJoinRequest(req: AuthRequest, res: Response) {
+  const id = req.params.id as string;
+  const requesterId = req.params.userId as string;
+  const result = await feedService.acceptJoinRequest(req.user!.id, id, requesterId);
+  res.json(result);
+}
+
+export async function rejectJoinRequest(req: AuthRequest, res: Response) {
+  const id = req.params.id as string;
+  const requesterId = req.params.userId as string;
+  const result = await feedService.rejectJoinRequest(req.user!.id, id, requesterId);
+  res.json(result);
+}
+
 export async function addComment(req: AuthRequest, res: Response) {
   const id = req.params.id as string;
   const { content } = req.body as { content: string };

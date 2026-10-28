@@ -2,6 +2,18 @@ import { Response } from 'express';
 import { AuthRequest } from '../../middleware/auth';
 import * as forumService from './service';
 
+// Uploaded images are root-relative "/uploads/..." paths; accept those and
+// absolute http(s) URLs, reject anything else (max 5 images).
+function validImageUrls(imageUrls: unknown): boolean {
+  return (
+    Array.isArray(imageUrls) &&
+    imageUrls.length <= 5 &&
+    imageUrls.every(
+      u => typeof u === 'string' && u.length <= 2048 && (/^https?:\/\//.test(u) || u.startsWith('/uploads/'))
+    )
+  );
+}
+
 export async function getColleges(_req: AuthRequest, res: Response) {
   const colleges = await forumService.getColleges();
   res.json({ colleges });
@@ -24,9 +36,15 @@ export async function getForumPosts(req: AuthRequest, res: Response) {
 
 export async function createForumPost(req: AuthRequest, res: Response) {
   const categoryId = req.params.categoryId as string;
-  const { title, content, isAnonymous } = req.body as { title: string; content: string; isAnonymous: boolean };
+  const { title, content, isAnonymous, imageUrls } = req.body as {
+    title: string;
+    content: string;
+    isAnonymous: boolean;
+    imageUrls?: string[];
+  };
   if (!title || !content) return res.status(400).json({ error: 'Title and content are required' });
-  const post = await forumService.createForumPost(req.user!.id, categoryId, title, content, isAnonymous || false);
+  if (imageUrls && !validImageUrls(imageUrls)) return res.status(400).json({ error: 'Invalid image URL' });
+  const post = await forumService.createForumPost(req.user!.id, categoryId, title, content, isAnonymous || false, imageUrls);
   res.status(201).json({ post });
 }
 
@@ -44,9 +62,14 @@ export async function upvotePost(req: AuthRequest, res: Response) {
 
 export async function addComment(req: AuthRequest, res: Response) {
   const id = req.params.id as string;
-  const { content, isAnonymous } = req.body as { content: string; isAnonymous: boolean };
+  const { content, isAnonymous, imageUrls } = req.body as {
+    content: string;
+    isAnonymous: boolean;
+    imageUrls?: string[];
+  };
   if (!content) return res.status(400).json({ error: 'Content is required' });
-  const comment = await forumService.addComment(req.user!.id, id, content, isAnonymous || false);
+  if (imageUrls && !validImageUrls(imageUrls)) return res.status(400).json({ error: 'Invalid image URL' });
+  const comment = await forumService.addComment(req.user!.id, id, content, isAnonymous || false, imageUrls);
   res.status(201).json({ comment });
 }
 

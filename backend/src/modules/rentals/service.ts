@@ -196,10 +196,11 @@ export async function createRequest(userId: string, listingId: string, data: Cre
   );
 
   // Create notification
+  const reqRow = result.rows[0] as { id: string };
   await query(
     `INSERT INTO notifications (user_id, type, title, message, data)
      VALUES ($1, 'rental_request', 'New rental request', 'Someone wants to rent your item', $2)`,
-    [owner.owner_id, JSON.stringify({ listingId, requestId: result.rows[0] })]
+    [owner.owner_id, JSON.stringify({ listingId, requestId: reqRow.id })]
   );
 
   return result.rows[0];
@@ -246,11 +247,45 @@ export async function respondToRequest(userId: string, requestId: string, status
     await query(
       `INSERT INTO notifications (user_id, type, title, message, data)
        VALUES ($1, 'rental_accepted', 'Rental request accepted!', 'Your rental request has been accepted', $2)`,
-      [requesterId, JSON.stringify({ requestId, listingId: req.listing_id })]
+      [requesterId, JSON.stringify({ requestId, listingId: req.listing_id, conversationId })]
     );
   }
 
   return { status, conversationId };
+}
+
+export async function getRequestById(userId: string, requestId: string) {
+  const result = await query(
+    `SELECT rr.*,
+            rl.title as listing_title, rl.image_urls as listing_images, rl.price_per_day,
+            rl.price_per_week, rl.price_per_month, rl.deposit, rl.location_name as listing_location,
+            rp.name as requester_name, rp.avatar_url as requester_avatar, rp.city as requester_city,
+            op.name as owner_name, op.avatar_url as owner_avatar, op.city as owner_city
+     FROM rental_requests rr
+     JOIN rental_listings rl ON rl.id = rr.listing_id
+     JOIN profiles rp ON rp.user_id = rr.requester_id
+     JOIN profiles op ON op.user_id = rr.owner_id
+     WHERE rr.id = $1 AND (rr.owner_id = $2 OR rr.requester_id = $2)`,
+    [requestId, userId]
+  );
+
+  if (result.rows.length === 0) throw new AppError(404, 'Rental request not found');
+
+  const request = result.rows[0] as Record<string, unknown>;
+
+  // Check if a conversation exists between owner and requester
+  const conv = await query(
+    `SELECT c.id FROM conversations c
+     JOIN conversation_members cm1 ON cm1.conversation_id = c.id AND cm1.user_id = $1
+     JOIN conversation_members cm2 ON cm2.conversation_id = c.id AND cm2.user_id = $2
+     WHERE (c.type = 'rental' AND c.related_listing_id = $3) OR c.type = 'general'
+     ORDER BY c.created_at DESC
+     LIMIT 1`,
+    [request.owner_id, request.requester_id, request.listing_id]
+  );
+
+  request.conversation_id = conv.rows[0]?.id || null;
+  return request;
 }
 
 export async function getMyListings(userId: string, page: number = 1, limit: number = 20) {

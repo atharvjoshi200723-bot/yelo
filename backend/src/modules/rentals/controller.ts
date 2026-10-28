@@ -48,6 +48,12 @@ export async function respondToRequest(req: AuthRequest, res: Response) {
   res.json(result);
 }
 
+export async function getRequestById(req: AuthRequest, res: Response) {
+  const id = req.params.id as string;
+  const request = await rentalService.getRequestById(req.user!.id, id);
+  res.json({ request });
+}
+
 export async function getMyListings(req: AuthRequest, res: Response) {
   const page = parseInt((req.query.page as string) || '1', 10);
   const listings = await rentalService.getMyListings(req.user!.id, page);

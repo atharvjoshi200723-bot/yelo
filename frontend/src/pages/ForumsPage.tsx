@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { College } from '../types';
@@ -24,6 +24,29 @@ export default function ForumsPage() {
     });
   }, []);
 
+  // Long college names are shortened for the tab strip, but two colleges can
+  // share their first words ("Graphic Era Deemed University" / "Graphic Era
+  // Hill University"), which made both tabs read the same. Extend any label
+  // that collides with another so every tab stays distinguishable.
+  const collegeLabels = useMemo(() => {
+    const words = colleges.map(college => college.name.trim().split(/\s+/));
+    const labels = colleges.map((college, i) =>
+      college.name.length > 15 ? words[i].slice(0, 2).join(' ') : college.name
+    );
+
+    for (let depth = 3; depth <= 5; depth++) {
+      const counts = new Map<string, number>();
+      labels.forEach(label => counts.set(label, (counts.get(label) ?? 0) + 1));
+      labels.forEach((label, i) => {
+        if ((counts.get(label) ?? 0) > 1 && words[i].length >= depth) {
+          labels[i] = words[i].slice(0, depth).join(' ');
+        }
+      });
+    }
+
+    return labels;
+  }, [colleges]);
+
   if (loading) return <ListSkeleton count={3} height="h-20" />;
 
   if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
@@ -39,14 +62,14 @@ export default function ForumsPage() {
 
       {/* College tabs */}
       <div className="flex gap-1 mb-6 overflow-x-auto activity-scroll -mx-4 px-4 pb-2">
-        {colleges.map(college => (
+        {colleges.map((college, index) => (
           <button key={college.id} onClick={() => setActiveCollege(college.slug)}
             className={`px-4 py-2 text-sm font-semibold whitespace-nowrap transition-all duration-200 border-b-2 ${
               activeCollege === college.slug
                 ? 'text-navy-900 border-navy-900'
                 : 'text-navy-400 border-transparent hover:text-navy-600'
             }`}>
-            {college.name.length > 15 ? college.name.split(' ').slice(0, 2).join(' ') : college.name}
+            {collegeLabels[index]}
           </button>
         ))}
       </div>

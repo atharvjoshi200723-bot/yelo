@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import { ImagePicker } from '../components/ui/ImagePicker';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../lib/api';
 import { ForumPost, ForumCategory, College } from '../types';
 import { ArrowLeft, Plus, X, ArrowUp, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import { getSocket } from '../lib/socket';
 
 export default function ForumCategoryPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -16,7 +18,7 @@ export default function ForumCategoryPage() {
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [newPost, setNewPost] = useState({ title: '', content: '', isAnonymous: false });
+  const [newPost, setNewPost] = useState<{ title: string; content: string; isAnonymous: boolean; imageUrls: string[] }>({ title: '', content: '', isAnonymous: false, imageUrls: [] });
   const [submitting, setSubmitting] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -57,14 +59,47 @@ export default function ForumCategoryPage() {
     fetchPosts(cat.id);
   };
 
+  // Real-time: watch the selected category so new posts and comment-count bumps
+  // from other phones appear without a reload. Re-joins on every category switch.
+  const activeCategoryId = selectedCategory?.id;
+  useEffect(() => {
+    if (!activeCategoryId) return;
+    let socket: ReturnType<typeof getSocket> | null = null;
+    try { socket = getSocket(); } catch { /* not signed in */ }
+    if (!socket) return;
+    const categoryId = activeCategoryId;
+
+    const join = () => socket?.emit('join_category', categoryId);
+    const onPost = (post: ForumPost) => {
+      if (post.category_id !== categoryId) return;
+      setPosts(prev => prev.some(p => p.id === post.id) ? prev : [post, ...prev]);
+    };
+    const onCount = (payload: { postId: string; comment_count: number }) => {
+      setPosts(prev => prev.map(p => p.id === payload.postId ? { ...p, comment_count: payload.comment_count } : p));
+    };
+
+    socket.on('connect', join);
+    socket.on('forum_post', onPost);
+    socket.on('forum_comment_count', onCount);
+    join();
+    return () => {
+      socket?.off('connect', join);
+      socket?.off('forum_post', onPost);
+      socket?.off('forum_comment_count', onCount);
+      socket?.emit('leave_category', categoryId);
+    };
+  }, [activeCategoryId]);
+
   const createPost = async () => {
     if (!selectedCategory || !newPost.title || !newPost.content) return;
     setSubmitting(true);
     try {
       const res = await api.post(`/forums/categories/${selectedCategory.id}/posts`, newPost);
-      setPosts([res.data.post, ...posts]);
+      // Functional update + dedupe: the socket `forum_post` event may arrive first
+      // with the same post id — appending blindly would duplicate it.
+      setPosts(prev => prev.some(p => p.id === res.data.post.id) ? prev : [res.data.post, ...prev]);
       setShowCreate(false);
-      setNewPost({ title: '', content: '', isAnonymous: false });
+      setNewPost({ title: '', content: '', isAnonymous: false, imageUrls: [] });
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { error?: string } } };
       alert(apiErr.response?.data?.error || 'Failed to create post');
@@ -83,12 +118,26 @@ export default function ForumCategoryPage() {
 
   return (
     <div>
-      <button onClick={() => navigate('/forums')} className="flex items-center gap-2 text-slate-600 hover:text-slate-800 mb-4">
+      <button onClick={() => navigate('/forums')} className="flex items-center gap-2 py-2.5 -my-1 text-slate-600 hover:text-slate-800 mb-4">
         <ArrowLeft size={18} /> All Colleges
       </button>
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900">{college.name}</h1>
+      </div>
+
+      {/* Mobile categories — full-width strip above the list so posts keep the whole column */}
+      <div className="md:hidden mb-4 overflow-x-auto activity-scroll -mx-4 px-4 pb-1">
+        <div className="flex gap-2">
+          {categories.map(cat => (
+            <button key={cat.id} onClick={() => selectCategory(cat)}
+              className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
+                selectedCategory?.id === cat.id ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600'
+              }`}>
+              {cat.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex gap-4">
@@ -106,27 +155,13 @@ export default function ForumCategoryPage() {
           </div>
         </div>
 
-        {/* Mobile categories */}
-        <div className="md:hidden mb-4 overflow-x-auto">
-          <div className="flex gap-2">
-            {categories.map(cat => (
-              <button key={cat.id} onClick={() => selectCategory(cat)}
-                className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
-                  selectedCategory?.id === cat.id ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600'
-                }`}>
-                {cat.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Posts */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">{selectedCategory?.name || 'Posts'}</h2>
+            <h2 className="text-lg font-semibold text-slate-900 min-w-0 truncate">{selectedCategory?.name || 'Posts'}</h2>
             {selectedCategory && (
               <button onClick={() => setShowCreate(true)}
-                className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-brand-700">
+                className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-brand-700 shrink-0">
                 <Plus size={14} /> New Post
               </button>
             )}
@@ -183,6 +218,9 @@ export default function ForumCategoryPage() {
               <textarea value={newPost.content} onChange={e => setNewPost({ ...newPost, content: e.target.value })}
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl min-h-[120px] focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
                 placeholder="Write your post..." />
+              <div className="mt-3">
+                <ImagePicker value={newPost.imageUrls} onChange={urls => setNewPost(prev => ({ ...prev, imageUrls: urls }))} />
+              </div>
               <div className="flex items-center gap-3 mt-3">
                 <input type="checkbox" id="anonymous" checked={newPost.isAnonymous}
                   onChange={e => setNewPost({ ...newPost, isAnonymous: e.target.checked })}

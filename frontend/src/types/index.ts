@@ -31,6 +31,10 @@ export interface SocialPost {
   comments_count: number;
   isLiked?: boolean;
   isSaved?: boolean;
+  participants_count?: number;
+  max_participants?: number | null;
+  is_participant?: boolean;
+  has_pending_request?: boolean;
   author_name?: string;
   author_avatar?: string;
   author_city?: string;
@@ -45,6 +49,7 @@ export interface Comment {
   author_id?: string;
   content: string;
   is_anonymous?: boolean;
+  image_urls?: string[];
   author_name?: string;
   author_avatar?: string;
   created_at: string;
@@ -90,10 +95,18 @@ export interface RentalRequest {
   agreed_price?: number;
   listing_title?: string;
   listing_images?: string[];
+  price_per_day?: number | string;
+  price_per_week?: number | string;
+  price_per_month?: number | string;
+  deposit?: number | string;
+  listing_location?: string;
   owner_name?: string;
   owner_avatar?: string;
+  owner_city?: string;
   requester_name?: string;
   requester_avatar?: string;
+  requester_city?: string;
+  conversation_id?: string | null;
   created_at: string;
 }
 
@@ -171,6 +184,7 @@ export interface ForumPost {
   title: string;
   content: string;
   is_anonymous: boolean;
+  image_urls?: string[];
   upvotes: number;
   comment_count: number;
   is_pinned: boolean;

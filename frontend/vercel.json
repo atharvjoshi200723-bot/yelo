@@ -5,6 +5,10 @@
       "destination": "https://yelo-1.onrender.com/api/:path*"
     },
     {
+      "source": "/uploads/:path*",
+      "destination": "https://yelo-1.onrender.com/uploads/:path*"
+    },
+    {
       "source": "/((?!api/|uploads/).*)",
       "destination": "/index.html"
     }

@@ -56,7 +56,12 @@ export async function unblockUser(blockerId: string, blockedId: string) {
   return { unblocked: true };
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function getPublicProfile(userId: string) {
+  // A malformed id (e.g. a link built from a missing author_id) must 404 cleanly
+  // instead of letting Postgres raise an "invalid input syntax for type uuid" 500.
+  if (!UUID_RE.test(userId)) throw new AppError(404, 'User not found');
   const result = await query(
     `SELECT u.id, p.name, p.avatar_url, p.bio, p.city, p.college,
             p.interests, bp.avg_rating, bp.total_reviews, bp.total_sessions, bp.title as buddy_title

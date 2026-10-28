@@ -5,9 +5,12 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 import LinkupPage from './pages/LinkupPage';
+import LinkupDetailPage from './pages/LinkupDetailPage';
 import RentPage from './pages/RentPage';
 import RentDetailPage from './pages/RentDetailPage';
 import CreateListingPage from './pages/CreateListingPage';
+import MyListingsPage from './pages/MyListingsPage';
+import RentalRequestDetailPage from './pages/RentalRequestDetailPage';
 import BuddyPage from './pages/BuddyPage';
 import BuddyDetailPage from './pages/BuddyDetailPage';
 import BuddyRequestDetailPage from './pages/BuddyRequestDetailPage';
@@ -57,12 +60,17 @@ function AppRoutes() {
         <Route path="/rent" element={<RentPage />} />
         <Route path="/rent/:id" element={<RentDetailPage />} />
         <Route path="/rent/create" element={<CreateListingPage />} />
+        <Route path="/rent/my-listings" element={<MyListingsPage />} />
+        <Route path="/rent/edit/:id" element={<CreateListingPage />} />
+        <Route path="/rentals/requests/:id" element={<RentalRequestDetailPage />} />
+        <Route path="/rent/requests/:id" element={<RentalRequestDetailPage />} />
         <Route path="/buddy" element={<BuddyPage />} />
         <Route path="/buddy/become" element={<BecomeBuddyPage />} />
         <Route path="/buddy/manage" element={<MyBuddyProfilePage />} />
         <Route path="/buddy/requests/:id" element={<BuddyRequestDetailPage />} />
         <Route path="/buddy/:id" element={<BuddyDetailPage />} />
         <Route path="/linkup" element={<LinkupPage onClose={() => window.history.back()} />} />
+        <Route path="/linkup/:id" element={<LinkupDetailPage />} />
         <Route path="/forums" element={<ForumsPage />} />
         <Route path="/forums/:slug" element={<ForumCategoryPage />} />
         <Route path="/forums/post/:id" element={<ForumPostPage />} />

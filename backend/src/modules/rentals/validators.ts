@@ -10,7 +10,8 @@ export const createListingSchema = z.object({
   deposit: z.number().min(0).max(100000).optional(),
   negotiable: z.boolean().default(true),
   condition: z.enum(['new', 'like_new', 'good', 'fair']),
-  imageUrls: z.array(z.string().url()).max(10).optional(),
+  // Uploaded images are root-relative "/uploads/..." paths, not absolute URLs
+  imageUrls: z.array(z.string().max(2048).refine(v => /^https?:\/\//.test(v) || v.startsWith('/uploads/'), 'Invalid image URL')).max(10).optional(),
   locationLat: z.number().min(-90).max(90),
   locationLng: z.number().min(-180).max(180),
   locationName: z.string().max(255),

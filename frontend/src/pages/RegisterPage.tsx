@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getGoogleSignInUrl, googleRedirectUrl, googleErrorMessage } from '../lib/googleAuth';
 const SAFETY_RULES = [
   'Meet publicly and keep personal details private until you trust someone',
   'No harassment, hate speech, or inappropriate behavior on YELO',
@@ -15,10 +16,28 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleConnecting, setGoogleConnecting] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
-  const apiUrl = import.meta.env.VITE_API_URL || '';
   const [searchParams] = useSearchParams();
+
+  // Same flow as the login page: fetch the Google URL, then navigate to it, so
+  // the browser never parks on the backend host while it boots.
+  const startGoogle = async () => {
+    setGoogleConnecting(true);
+    setError('');
+    const result = await getGoogleSignInUrl('register');
+    if (result.ok) {
+      window.location.href = result.url;
+      return;
+    }
+    if (result.reason === 'legacy') {
+      window.location.href = googleRedirectUrl('register');
+      return;
+    }
+    setError(googleErrorMessage(result.reason, result.reason === 'offline' ? result.message : undefined));
+    setGoogleConnecting(false);
+  };
 
   // Google redirects back with ?error=... — surface it rather than ignoring it.
   useEffect(() => {
@@ -160,8 +179,9 @@ export default function RegisterPage() {
 
           <button
             type="button"
-            onClick={() => window.location.href = `${apiUrl}/auth/google?mode=register`}
-            className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-medium hover:bg-slate-50 transition-colors"
+            onClick={startGoogle}
+            disabled={googleConnecting}
+            className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-medium hover:bg-slate-50 transition-colors disabled:opacity-60"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h10.08c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -169,7 +189,7 @@ export default function RegisterPage() {
               <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l2.39-2.39C17.45 2.67 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.81-1.34 2.63-2.41 4.6-2.41z" />
             </svg>
-            Sign up with Google
+            {googleConnecting ? 'Connecting…' : 'Sign up with Google'}
           </button>
 
           <div className="flex flex-col gap-2">

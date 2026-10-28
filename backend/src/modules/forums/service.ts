@@ -1,8 +1,9 @@
 import { query } from '../../lib/db';
 import { AppError } from '../../middleware/errorHandler';
+import { getRealtimeIO } from '../../lib/realtime';
 
 export async function getColleges() {
-  const result = await query('SELECT * FROM colleges ORDER BY name');
+  const result = await query('SELECT * FROM colleges ORDER BY sort_order, name');
   return result.rows;
 }
 
@@ -60,17 +61,35 @@ export async function getForumPosts(categoryId: string, page: number = 1, limit:
   };
 }
 
-export async function createForumPost(userId: string, categoryId: string, title: string, content: string, isAnonymous: boolean) {
+export async function createForumPost(userId: string, categoryId: string, title: string, content: string, isAnonymous: boolean, imageUrls?: string[]) {
   const catCheck = await query('SELECT id FROM forum_categories WHERE id = $1', [categoryId]);
   if (catCheck.rows.length === 0) throw new AppError(404, 'Category not found');
 
   const result = await query(
-    `INSERT INTO forum_posts (category_id, user_id, title, content, is_anonymous)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO forum_posts (category_id, user_id, title, content, is_anonymous, image_urls)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [categoryId, userId, title, content, isAnonymous]
+    [categoryId, userId, title, content, isAnonymous, imageUrls || []]
   );
-  return result.rows[0];
+  const post = result.rows[0];
+
+  // Enrich with author fields so every client can render the card without a refetch
+  const author = await query(
+    `SELECT p.name as author_name, p.avatar_url as author_avatar
+     FROM profiles p WHERE p.user_id = $1`,
+    [userId]
+  );
+  const enriched = {
+    ...post,
+    author_name: isAnonymous ? null : (author.rows[0] as { author_name: string } | undefined)?.author_name ?? null,
+    author_avatar: isAnonymous ? null : (author.rows[0] as { author_avatar: string } | undefined)?.author_avatar ?? null,
+    isUpvoted: false,
+  };
+
+  // Push to everyone watching this category so new posts appear without a reload
+  getRealtimeIO()?.to(`category:${categoryId}`).emit('forum_post', enriched);
+
+  return enriched;
 }
 
 export async function getForumPostById(postId: string, userId: string) {
@@ -106,17 +125,40 @@ export async function upvotePost(userId: string, postId: string) {
   }
 }
 
-export async function addComment(userId: string, postId: string, content: string, isAnonymous: boolean) {
+export async function addComment(userId: string, postId: string, content: string, isAnonymous: boolean, imageUrls?: string[]) {
   const postCheck = await query('SELECT id FROM forum_posts WHERE id = $1', [postId]);
   if (postCheck.rows.length === 0) throw new AppError(404, 'Post not found');
 
   const result = await query(
-    `INSERT INTO forum_comments (post_id, user_id, content, is_anonymous)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO forum_comments (post_id, user_id, content, is_anonymous, image_urls)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
-    [postId, userId, content, isAnonymous]
+    [postId, userId, content, isAnonymous, imageUrls || []]
   );
-  await query('UPDATE forum_posts SET comment_count = comment_count + 1 WHERE id = $1', [postId]);
+  const countResult = await query(
+    'UPDATE forum_posts SET comment_count = comment_count + 1 WHERE id = $1 RETURNING comment_count, category_id',
+    [postId]
+  );
+
+  // Enrich with author fields (hidden when anonymous), same shape as getComments
+  const comment = result.rows[0];
+  const author = await query(
+    `SELECT p.name as author_name, p.avatar_url as author_avatar
+     FROM profiles p WHERE p.user_id = $1`,
+    [userId]
+  );
+  const enriched = {
+    ...comment,
+    author_name: isAnonymous ? null : (author.rows[0] as { author_name: string } | undefined)?.author_name ?? null,
+    author_avatar: isAnonymous ? null : (author.rows[0] as { author_avatar: string } | undefined)?.author_avatar ?? null,
+  };
+
+  // Push to everyone viewing this post so comments appear without a reload,
+  // and bump the count on the category list for anyone watching it.
+  const io = getRealtimeIO();
+  const { comment_count, category_id } = countResult.rows[0] as { comment_count: number; category_id: string };
+  io?.to(`post:${postId}`).emit('forum_comment', enriched);
+  io?.to(`category:${category_id}`).emit('forum_comment_count', { postId, comment_count });
 
   // Notify post author
   const post = (await query('SELECT user_id FROM forum_posts WHERE id = $1', [postId])).rows[0] as { user_id: string };
@@ -128,7 +170,9 @@ export async function addComment(userId: string, postId: string, content: string
     );
   }
 
-  return result.rows[0];
+  // Return the enriched row: the socket event may beat this HTTP response, so the
+  // sender's own UI needs the same author fields either way.
+  return enriched;
 }
 
 export async function getComments(postId: string, userId: string, page: number = 1, limit: number = 20) {

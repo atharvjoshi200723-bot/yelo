@@ -1,7 +1,10 @@
 import { useState, useMemo } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
+import { useKeyboardInset } from '../../hooks/useKeyboardInset';
+import { ImagePicker } from '../ui/ImagePicker';
 import { X } from 'lucide-react';
+import { SocialPost } from '../../types';
 
 
 
@@ -33,8 +36,15 @@ export interface PlanFormValues {
   time: string;
 }
 
-export function CreatePlanModal({ onClose }: { onClose: () => void }) {
+export function CreatePlanModal({
+  onClose,
+  onSuccess,
+}: {
+  onClose: () => void;
+  onSuccess?: (post: SocialPost) => void;
+}) {
   const { user } = useAuth();
+  const keyboardInset = useKeyboardInset();
 
   const today = useMemo(() => {
     const d = new Date();
@@ -58,6 +68,7 @@ export function CreatePlanModal({ onClose }: { onClose: () => void }) {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -114,9 +125,11 @@ export function CreatePlanModal({ onClose }: { onClose: () => void }) {
         category: backendCategory,
         title: form.title.trim() || undefined,
         content,
+        imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
       });
 
-      // Success: close modal and reset form
+      // Success: notify caller, close modal and reset form
+      onSuccess?.(res.data.post);
       onClose();
       setForm({
         category: 'Walking',
@@ -126,6 +139,7 @@ export function CreatePlanModal({ onClose }: { onClose: () => void }) {
         date: today,
         time: defaultTime,
       });
+      setImageUrls([]);
       setError(null);
       setSubmitting(false);
     } catch (err: unknown) {
@@ -141,9 +155,10 @@ export function CreatePlanModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      className="fixed inset-0 bg-cream-50/95 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ paddingBottom: keyboardInset }}
     >
-      <div className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl rounded-b-3xl p-6 animate-slide-up max-h-[90dvh] sm:max-h-[85vh] flex flex-col overflow-hidden">
+      <div className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl rounded-b-3xl shadow-lifted p-6 animate-slide-up max-h-[min(90dvh,100%)] sm:max-h-[min(85vh,100%)] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between mb-6 flex-shrink-0">                <h2 className="font-display text-display-sm text-navy-900">Create Linkup</h2>
           <button
             onClick={() => onClose()}
@@ -154,14 +169,8 @@ export function CreatePlanModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 -mx-2 px-2">
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+        <form className="flex-1 flex flex-col min-h-0" onSubmit={handleSubmit} noValidate>
+          <div className="flex-1 overflow-y-auto min-h-0 -mx-2 px-2 space-y-4">
             {/* Activity Category */}
             <div>
               <label className="block text-xs font-semibold text-navy-500 tracking-wider uppercase mb-3">
@@ -171,6 +180,7 @@ export function CreatePlanModal({ onClose }: { onClose: () => void }) {
                 {ACTIVITY_CATEGORIES.map((cat) => (
                   <button
                     key={cat}
+                    type="button"
                     onClick={() =>
                       setForm(prev => ({
                         ...prev,
@@ -219,6 +229,14 @@ export function CreatePlanModal({ onClose }: { onClose: () => void }) {
               />
             </div>
 
+            {/* Photos */}
+            <div>
+              <label className="block text-xs font-semibold text-navy-500 tracking-wider uppercase mb-3">
+                Photos
+              </label>
+              <ImagePicker value={imageUrls} onChange={setImageUrls} />
+            </div>
+
             {/* Maximum number of participants */}
             <div>
               <label className="block text-xs font-semibold text-navy-500 tracking-wider uppercase mb-3">
@@ -262,18 +280,24 @@ export function CreatePlanModal({ onClose }: { onClose: () => void }) {
               />
             </div>
 
-            {/* Create Plan button */}
-            <div className="mt-6">
-              <button
-                type="submit"
-                disabled={submitting || !form.title.trim() || !form.description.trim()}
-                className="w-full py-3 bg-navy-900 text-cream-50 rounded-xl font-medium hover:bg-navy-800 disabled:opacity-50 transition-all duration-200 btn-press flex items-center justify-center gap-2"
-              >
-                {submitting ? 'Creating...' : 'Create Plan'}
-              </button>
-            </div>
-          </form>
-        </div>
+          </div>
+
+          {/* Create Plan button — pinned below the fields so it is always reachable */}
+          <div className="flex-shrink-0 pt-4 mt-4 border-t border-navy-100/30">
+            {error && (
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                {error}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={submitting || !form.title.trim() || !form.description.trim()}
+              className="w-full py-3 bg-navy-900 text-cream-50 rounded-xl font-medium hover:bg-navy-800 disabled:opacity-50 transition-all duration-200 btn-press flex items-center justify-center gap-2"
+            >
+              {submitting ? 'Creating...' : 'Create Plan'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

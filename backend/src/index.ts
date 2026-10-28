@@ -11,6 +11,7 @@ import { initDB, pool } from './lib/db';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticate } from './middleware/auth';
 import { setSocketIO } from './modules/messaging/service';
+import { setRealtimeIO } from './lib/realtime';
 
 // Routes
 import authRoutes from './modules/auth/routes';
@@ -23,6 +24,7 @@ import messageRoutes from './modules/messaging/routes';
 import notificationRoutes from './modules/notifications/routes';
 import reviewRoutes from './modules/reviews/routes';
 import reportRoutes from './modules/reports/routes';
+import uploadRoutes from './modules/uploads/routes';
 import adminRoutes from './modules/admin/routes';
 import transactionRoutes from './modules/transactions/routes';
 
@@ -41,6 +43,7 @@ async function main() {
   });
 
   setSocketIO(io);
+  setRealtimeIO(io);
 
   // Socket.IO auth
   io.use((socket, next) => {
@@ -60,6 +63,31 @@ async function main() {
     const userId = (socket as any).userId;
     console.log(`User connected: ${userId}`);
     socket.join(`user:${userId}`);
+
+    // Forum rooms: clients ask to join "their" post/category by id; room names are
+    // always built server-side with fixed prefixes, so a client can never join
+    // someone else's private `user:` room this way.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const roomFor = (prefix: string) => (id: unknown) => {
+      if (typeof id === 'string' && UUID_RE.test(id)) return `${prefix}:${id}`;
+      return null;
+    };
+    socket.on('join_post', (id: unknown) => {
+      const room = roomFor('post')(id);
+      if (room) socket.join(room);
+    });
+    socket.on('leave_post', (id: unknown) => {
+      const room = roomFor('post')(id);
+      if (room) socket.leave(room);
+    });
+    socket.on('join_category', (id: unknown) => {
+      const room = roomFor('category')(id);
+      if (room) socket.join(room);
+    });
+    socket.on('leave_category', (id: unknown) => {
+      const room = roomFor('category')(id);
+      if (room) socket.leave(room);
+    });
 
     socket.on('disconnect', () => {
       console.log(`User disconnected: ${userId}`);
@@ -104,6 +132,7 @@ async function main() {
   app.use('/api/reports', reportRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/transactions', transactionRoutes);
+  app.use('/api/uploads', uploadRoutes);
 
   // Error handler
   app.use(errorHandler);

@@ -155,6 +155,10 @@ export async function sendMessage(conversationId: string, senderId: string, cont
 }
 
 export async function createConversation(userId: string, otherUserId: string, type: string = 'general', title?: string) {
+  if (userId === otherUserId) {
+    throw new AppError(400, 'You cannot start a chat with yourself');
+  }
+
   // Check if blocked
   const blockCheck = await query(
     `SELECT id FROM blocks WHERE (blocker_id = $1 AND blocked_id = $2) OR (blocker_id = $2 AND blocked_id = $1)`,
@@ -183,7 +187,8 @@ export async function createConversation(userId: string, otherUserId: string, ty
   );
   const convId = (result.rows[0] as { id: string }).id;
   await query(
-    'INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2), ($1, $3)',
+    `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2), ($1, $3)
+     ON CONFLICT (conversation_id, user_id) DO NOTHING`,
     [convId, userId, otherUserId]
   );
   return { id: convId, isNew: true };

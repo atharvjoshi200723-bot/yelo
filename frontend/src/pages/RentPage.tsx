@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { RentalListing } from '../types';
-import { Search, Plus, MapPin, Clock, ArrowRight } from 'lucide-react';
+import { Search, Plus, MapPin, Clock, ArrowRight, Package } from 'lucide-react';
 import { ErrorState, EmptyState, GridSkeleton } from '../components/ui/FeedbackStates';
 
 interface Category { id: string; name: string; icon: string; slug: string; }
@@ -97,6 +97,15 @@ export default function RentPage() {
             </button>
           ))}
         </div>
+
+        {/* My listings — edit or remove what you have listed */}
+        <Link
+          to="/rent/my-listings"
+          className="mt-3 inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-navy-100/30 rounded-xl text-sm font-medium text-navy-700 hover:bg-navy-50 hover:border-navy-200 shadow-soft transition-all btn-press"
+        >
+          <Package size={16} className="text-amber-500" />
+          My Listing
+        </Link>
       </div>
 
       {/* Stats bar */}

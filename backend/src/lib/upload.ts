@@ -93,6 +93,32 @@ const rawUpload = multer({
   },
 });
 
+// Compress one already-stored multer file in place (original → .webp)
+async function compressStoredFile(file: { path: string; filename: string; mimetype: string; size: number }): Promise<void> {
+  const inputPath = file.path;
+  const outputPath = inputPath.replace(/\.[^.]+$/, '.webp');
+
+  // If input is already .webp (same path), just keep it as-is
+  if (inputPath === outputPath) return;
+
+  await compressImage(inputPath, outputPath);
+  file.filename = path.basename(outputPath);
+  file.path = outputPath;
+  file.mimetype = 'image/webp';
+  file.size = fs.statSync(outputPath).size;
+}
+
+async function compressAll(files: Express.Multer.File[]): Promise<void> {
+  for (const file of files) {
+    try {
+      await compressStoredFile(file);
+    } catch (compressErr) {
+      console.error('Image compression failed, using original:', compressErr);
+      // Continue with original file if compression fails
+    }
+  }
+}
+
 // Wrapper that adds compression after multer processing
 export const upload = {
   single(fieldName: string) {
@@ -102,26 +128,22 @@ export const upload = {
           next(err);
           return;
         }
-        try {
-          const inputPath = req.file.path;
-          const outputPath = inputPath.replace(/\.[^.]+$/, '.webp');
+        await compressAll([req.file]);
+        next();
+      });
+    };
+  },
 
-          // If input is already .webp (same path), just keep it as-is
-          if (inputPath === outputPath) {
-            next();
-            return;
-          }
-
-          await compressImage(inputPath, outputPath);
-          req.file.filename = path.basename(outputPath);
-          req.file.path = outputPath;
-          req.file.mimetype = 'image/webp';
-          const stats = fs.statSync(outputPath);
-          req.file.size = stats.size;
-        } catch (compressErr) {
-          console.error('Image compression failed, using original:', compressErr);
-          // Continue with original file if compression fails
+  // Multiple files under one field name (e.g. post images)
+  array(fieldName: string, maxCount: number) {
+    return (req: Request, res: Response, next: NextFunction) => {
+      rawUpload.array(fieldName, maxCount)(req, res, async (err) => {
+        if (err) {
+          next(err);
+          return;
         }
+        const files = (req.files as Express.Multer.File[] | undefined) || [];
+        await compressAll(files);
         next();
       });
     };

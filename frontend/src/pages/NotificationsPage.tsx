@@ -25,12 +25,39 @@ function getNotificationRoute(notification: Notification): string | null {
       return null;
     }
     case 'buddy_accepted': {
-      // Navigate to messages — conversation should exist
+      const convId = data?.conversationId as string | undefined;
+      if (convId) return `/messages?conv=${convId}`;
       return '/messages';
     }
-    case 'rental_request':
-    case 'rental_accepted': {
+    case 'rental_request': {
+      const rawRequestId = data?.requestId;
+      const requestId = typeof rawRequestId === 'string'
+        ? rawRequestId
+        : ((rawRequestId as Record<string, unknown>)?.id as string | undefined);
+      if (requestId) return `/rentals/requests/${requestId}`;
+      const listingId = data?.listingId as string | undefined;
+      if (listingId) return `/rent/${listingId}`;
       return '/messages';
+    }
+    case 'rental_accepted': {
+      const convId = data?.conversationId as string | undefined;
+      if (convId) return `/messages?conv=${convId}`;
+      const rawRequestId = data?.requestId;
+      const requestId = typeof rawRequestId === 'string'
+        ? rawRequestId
+        : ((rawRequestId as Record<string, unknown>)?.id as string | undefined);
+      if (requestId) return `/rentals/requests/${requestId}`;
+      return '/messages';
+    }
+    case 'message': {
+      const convId = data?.conversationId as string | undefined;
+      if (convId) return `/messages?conv=${convId}`;
+      return '/messages';
+    }
+    case 'forum_reply': {
+      const postId = data?.postId as string | undefined;
+      if (postId) return `/forums/post/${postId}`;
+      return '/forums';
     }
     default:
       return null;

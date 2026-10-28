@@ -5,7 +5,9 @@ import { ForumPost, Comment } from '../types';
 import { ArrowLeft, ArrowUp, MessageSquare, Clock, Flag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import ReportModal from '../components/moderation/ReportModal';
+import { ImagePicker } from '../components/ui/ImagePicker';
 import { useAuth } from '../context/AuthContext';
+import { getSocket } from '../lib/socket';
 
 export default function ForumPostPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +16,7 @@ export default function ForumPostPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
+  const [commentImages, setCommentImages] = useState<string[]>([]);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -31,13 +34,67 @@ export default function ForumPostPage() {
     }).catch(() => navigate('/forums'));
   }, [id]);
 
+  // Real-time: join this post's room so comments from other phones are pushed
+  // to us the moment they are posted — no reload needed.
+  useEffect(() => {
+    if (!id) return;
+    let socket: ReturnType<typeof getSocket> | null = null;
+    try { socket = getSocket(); } catch { /* not signed in */ }
+    if (!socket) return;
+
+    const join = () => socket?.emit('join_post', id);
+    const onComment = (comment: Comment & { post_id?: string }) => {
+      if (comment.post_id !== id) return;
+      setComments(prev => prev.some(c => c.id === comment.id) ? prev : [...prev, comment]);
+    };
+
+    // 'connect' also fires on reconnect — rooms are re-joined server-side each time
+    socket.on('connect', join);
+    socket.on('forum_comment', onComment);
+    join();
+    return () => {
+      socket?.off('connect', join);
+      socket?.off('forum_comment', onComment);
+      socket?.emit('leave_post', id);
+    };
+  }, [id]);
+
+  // Slow safety-net poll in case a socket push is missed (background tabs, brief
+  // disconnects). 60s keeps us well inside the 100-req/15-min rate limit — the
+  // earlier 10s cadence silently exhausted it alongside TopBar's 30s polling.
+  useEffect(() => {
+    if (!id) return;
+    const refreshComments = () => {
+      if (document.hidden) return;
+      api.get(`/forums/posts/${id}/comments`)
+        .then(res => setComments(res.data.comments || []))
+        .catch(() => { /* keep what is on screen */ });
+    };
+
+    const interval = window.setInterval(refreshComments, 60000);
+    window.addEventListener('focus', refreshComments);
+    document.addEventListener('visibilitychange', refreshComments);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshComments);
+      document.removeEventListener('visibilitychange', refreshComments);
+    };
+  }, [id]);
+
   const addComment = async () => {
     if (!id || !newComment.trim()) return;
     setSubmitting(true);
     try {
-      const res = await api.post(`/forums/posts/${id}/comments`, { content: newComment, isAnonymous });
-      setComments([...comments, res.data.comment]);
+      const res = await api.post(`/forums/posts/${id}/comments`, {
+        content: newComment,
+        isAnonymous,
+        imageUrls: commentImages.length > 0 ? commentImages : undefined,
+      });
+      // Functional update + dedupe: the socket push can beat this HTTP response
+      // (same comment, same id), and appending blindly would duplicate it.
+      setComments(prev => prev.some(c => c.id === res.data.comment.id) ? prev : [...prev, res.data.comment]);
       setNewComment('');
+      setCommentImages([]);
     } catch { /* ignore */ }
     setSubmitting(false);
   };
@@ -54,8 +111,8 @@ export default function ForumPostPage() {
   if (!post) return null;
 
   return (
-    <div className="px-4 py-6 max-w-2xl mx-auto">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-600 hover:text-slate-800 mb-4">
+    <div>
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 py-2.5 -my-1 text-slate-600 hover:text-slate-800 mb-4">
         <ArrowLeft size={18} /> Back
       </button>
 
@@ -78,6 +135,19 @@ export default function ForumPostPage() {
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3 leading-snug">{post.title}</h1>
             <div className="text-slate-700 whitespace-pre-wrap leading-relaxed text-base">{post.content}</div>
+            {post.image_urls && post.image_urls.length > 0 && (
+              <div className={`grid gap-2 mt-4 ${post.image_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                {post.image_urls.map((url, i) => (
+                  <img
+                    key={`${url}-${i}`}
+                    src={url}
+                    alt={`Post image ${i + 1}`}
+                    loading="lazy"
+                    className={`w-full rounded-xl object-cover ${post.image_urls!.length === 1 ? 'max-h-96' : 'h-40'}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </article>
@@ -107,7 +177,10 @@ export default function ForumPostPage() {
             rows={3}
             placeholder="Write a comment..."
           />
-          <div className="flex items-center justify-between mt-3 gap-3">
+          <div className="mt-3">
+            <ImagePicker value={commentImages} onChange={setCommentImages} />
+          </div>
+          <div className="flex items-center justify-between flex-wrap mt-3 gap-3">
             <label className="flex items-center gap-2 text-sm text-slate-600">
               <input
                 type="checkbox"
@@ -140,6 +213,19 @@ export default function ForumPostPage() {
                 <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
               </div>
               <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
+              {comment.image_urls && comment.image_urls.length > 0 && (
+                <div className={`grid gap-2 mt-3 ${comment.image_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                  {comment.image_urls.map((url, i) => (
+                    <img
+                      key={`${url}-${i}`}
+                      src={url}
+                      alt={`Comment image ${i + 1}`}
+                      loading="lazy"
+                      className={`w-full rounded-xl object-cover ${comment.image_urls!.length === 1 ? 'max-h-80' : 'h-36'}`}
+                    />
+                  ))}
+                </div>
+              )}
             </article>
           ))}
         </div>
