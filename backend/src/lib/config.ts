@@ -6,8 +6,23 @@ dotenv.config();
 const isTruthy = (value: string | undefined): boolean =>
   ['true', '1', 'yes', 'on'].includes((value ?? '').trim().toLowerCase());
 
-const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
-const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+// Hosting dashboards label these differently, so accept the usual spellings
+// rather than silently disabling Google sign-in when one is named differently.
+const firstEnv = (...names: string[]): string => {
+  for (const name of names) {
+    const value = (process.env[name] || '').trim();
+    if (value) return value;
+  }
+  return '';
+};
+
+const googleClientId = firstEnv('GOOGLE_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_ID');
+const googleClientSecret = firstEnv('GOOGLE_CLIENT_SECRET', 'GOOGLE_OAUTH_CLIENT_SECRET', 'GOOGLE_SECRET');
+// Names only — never values — so the host can report exactly what is missing.
+const googleMissing: string[] = [
+  ...(googleClientId ? [] : ['GOOGLE_CLIENT_ID']),
+  ...(googleClientSecret ? [] : ['GOOGLE_CLIENT_SECRET']),
+];
 
 export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
@@ -55,10 +70,15 @@ export const config = {
     // GOOGLE_OAUTH_ENABLED is spelled exactly "true" — a missing flag used to
     // unregister /api/auth/google and return a bare 404. An explicit false
     // still wins over the credentials fallback.
+    // An explicit false still wins over the credentials fallback, but an empty
+    // or misspelled flag must not look like "off" when the secrets exist.
+    // Credentials are required either way: passport-google-oauth20 throws while
+    // building the strategy when one is missing, which used to crash the whole
+    // server at boot if GOOGLE_OAUTH_ENABLED=true was set on its own.
     enabled:
-      process.env.GOOGLE_OAUTH_ENABLED
-        ? isTruthy(process.env.GOOGLE_OAUTH_ENABLED)
-        : Boolean(googleClientId && googleClientSecret),
+      googleMissing.length === 0 &&
+      (process.env.GOOGLE_OAUTH_ENABLED ? isTruthy(process.env.GOOGLE_OAUTH_ENABLED) : true),
+    missing: googleMissing,
     clientId: googleClientId,
     clientSecret: googleClientSecret,
     redirectUri:

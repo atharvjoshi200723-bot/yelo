@@ -159,12 +159,18 @@ if (config.google.enabled) {
   // The frontend asks this first; answer in its own format so the button can
   // explain the problem instead of leaving the user on an API error page.
   router.get('/google/start', (_req, res) => {
-    res.status(503).json({ error: 'Google sign-in is not configured on this server' });
+    res.status(503).json({
+      error: 'Google sign-in is not configured on this server',
+      // Names only: the app shows this so the missing setting is obvious.
+      missing: config.google.missing,
+    });
   });
 
   console.warn(
-    '[auth] Google sign-in DISABLED — set GOOGLE_OAUTH_ENABLED=true plus GOOGLE_CLIENT_ID and ' +
-      'GOOGLE_CLIENT_SECRET. /api/auth/google now redirects to /login?error=google_unavailable.'
+    '[auth] Google sign-in DISABLED — missing ' +
+      (config.google.missing.length > 0 ? config.google.missing.join(', ') : 'GOOGLE_OAUTH_ENABLED=true') +
+      '. Add these to the host environment (Render → your service → Environment, then restart). ' +
+      '/api/auth/google redirects to /login?error=google_unavailable until then.'
   );
 }
 

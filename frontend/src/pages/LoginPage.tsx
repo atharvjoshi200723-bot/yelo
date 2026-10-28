@@ -21,7 +21,13 @@ function GoogleLogin({ onError }: { onError: (message: string) => void }) {
       window.location.href = googleRedirectUrl('login');
       return;
     }
-    onError(googleErrorMessage(result.reason, result.reason === 'offline' ? result.message : undefined));
+    onError(
+      googleErrorMessage(
+        result.reason,
+        result.reason === 'offline' ? result.message : undefined,
+        result.reason === 'unavailable' ? result.missing : undefined,
+      ),
+    );
     setConnecting(false);
   };
 

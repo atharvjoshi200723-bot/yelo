@@ -4,7 +4,7 @@ export type GoogleSignInMode = 'login' | 'register';
 
 export type GoogleStartResult =
   | { ok: true; url: string }
-  | { ok: false; reason: 'unavailable' | 'offline' | 'legacy'; message?: string };
+  | { ok: false; reason: 'unavailable' | 'offline' | 'legacy'; message?: string; missing?: string[] };
 
 /**
  * Ask the API where to send the browser for Google sign-in.
@@ -34,13 +34,14 @@ export async function getGoogleSignInUrl(mode: GoogleSignInMode): Promise<Google
       return { ok: false, reason: 'unavailable' };
     } catch (err: unknown) {
       const apiErr = err as {
-        response?: { status?: number; data?: { error?: string } };
+        response?: { status?: number; data?: { error?: string; missing?: string[] } };
         message?: string;
       };
       const status = apiErr.response?.status;
       // Older deployments have no /google/start; fall back to the redirect route.
       if (status === 404) return { ok: false, reason: 'legacy' };
-      if (status === 503) return { ok: false, reason: 'unavailable' };
+      // 503 carries the names of the settings the server is missing.
+      if (status === 503) return { ok: false, reason: 'unavailable', missing: apiErr.response?.data?.missing };
       // Keep the server's own wording (e.g. the rate-limit message) when it has one.
       return {
         ok: false,
@@ -64,9 +65,15 @@ export function googleRedirectUrl(mode: GoogleSignInMode): string {
   return `${apiUrl}/auth/google?mode=${mode}`;
 }
 
-export function googleErrorMessage(reason: 'unavailable' | 'offline', detail?: string): string {
+export function googleErrorMessage(
+  reason: 'unavailable' | 'offline',
+  detail?: string,
+  missing?: string[],
+): string {
   if (reason === 'unavailable') {
-    return 'Google sign-in is not set up on the server yet. Please sign in with your email instead.';
+    return missing && missing.length > 0
+      ? `Google sign-in is not set up on the server yet (missing ${missing.join(', ')}). Please sign in with your email instead.`
+      : 'Google sign-in is not set up on the server yet. Please sign in with your email instead.';
   }
   return detail || 'Could not reach the server. Check your connection and try again.';
 }

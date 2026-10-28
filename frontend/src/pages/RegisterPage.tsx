@@ -35,7 +35,13 @@ export default function RegisterPage() {
       window.location.href = googleRedirectUrl('register');
       return;
     }
-    setError(googleErrorMessage(result.reason, result.reason === 'offline' ? result.message : undefined));
+    setError(
+      googleErrorMessage(
+        result.reason,
+        result.reason === 'offline' ? result.message : undefined,
+        result.reason === 'unavailable' ? result.missing : undefined,
+      ),
+    );
     setGoogleConnecting(false);
   };
 
