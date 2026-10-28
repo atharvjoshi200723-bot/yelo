@@ -4,7 +4,10 @@ dist/
 .env.local
 *.log
 .DS_Store
-uploads/
+# Uploaded files only. Keep this anchored: a bare `uploads/` also matches
+# backend/src/modules/uploads, which hid the upload route from the repo and
+# broke the production build with "Cannot find module './modules/uploads/routes'"
+/backend/uploads/
 coverage/
 .freebuff/
 _reference_yelo-main/
