@@ -195,7 +195,7 @@ export default function RegisterPage() {
               <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l2.39-2.39C17.45 2.67 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.81-1.34 2.63-2.41 4.6-2.41z" />
             </svg>
-            {googleConnecting ? 'Connecting…' : 'Sign up with Google'}
+            {googleConnecting ? 'Connecting…' : 'Log in with Google'}
           </button>
 
           <div className="flex flex-col gap-2">
