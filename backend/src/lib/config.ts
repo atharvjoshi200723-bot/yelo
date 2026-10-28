@@ -16,6 +16,9 @@ const firstEnv = (...names: string[]): string => {
   return '';
 };
 
+const frontendUrlEnv = (process.env.FRONTEND_URL || '').trim();
+const apiUrlEnv = (process.env.API_URL || '').trim();
+
 const googleClientId = firstEnv('GOOGLE_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_ID');
 const googleClientSecret = firstEnv('GOOGLE_CLIENT_SECRET', 'GOOGLE_OAUTH_CLIENT_SECRET', 'GOOGLE_SECRET');
 // Names only — never values — so the host can report exactly what is missing.
@@ -27,8 +30,11 @@ const googleMissing: string[] = [
 export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
-  apiUrl: process.env.API_URL || 'http://localhost:3001',
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  apiUrl: apiUrlEnv || 'http://localhost:3001',
+  frontendUrl: frontendUrlEnv || 'http://localhost:5173',
+  // True only when the host actually set it — the localhost fallback is useless
+  // in production and silently sends Google sessions to the wrong place.
+  frontendUrlConfigured: frontendUrlEnv.length > 0,
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),
@@ -81,9 +87,12 @@ export const config = {
     missing: googleMissing,
     clientId: googleClientId,
     clientSecret: googleClientSecret,
+    // Empty means "decide per request": the callback is derived from the host
+    // the request arrived on, so a deployment that forgets API_URL still sends
+    // Google the right registered URI instead of http://localhost:3001.
     redirectUri:
-      process.env.GOOGLE_REDIRECT_URI ||
-      `${process.env.API_URL || 'http://localhost:3001'}/api/auth/google/callback`,
+      (process.env.GOOGLE_REDIRECT_URI || '').trim() ||
+      (apiUrlEnv ? `${apiUrlEnv.replace(/\/+$/, '')}/api/auth/google/callback` : ''),
     issuer: process.env.GOOGLE_ISSUER || 'https://accounts.google.com',
     jwksUri: process.env.GOOGLE_JWKS_URI || 'https://www.googleapis.com/oauth2/v3/certs',
   },

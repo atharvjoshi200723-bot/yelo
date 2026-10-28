@@ -50,10 +50,17 @@ const returnToFromState = (state: unknown): string => {
 // frontend can fetch it as JSON (see /google/start) instead of navigating the
 // browser to the API host — on a cold server that navigation parks the user on
 // the backend's "application loading" page before Google is ever reached.
-const googleAuthorizeUrl = (returnTo: string): string => {
+// The URI Google sends the browser back to. Config wins when the host set it;
+// otherwise use the origin this request arrived on, which is the same public
+// host the browser (or the frontend's proxy) reached. Empty config used to fall
+// back to http://localhost:3001 and every sign-in failed with a URI mismatch.
+const callbackUrlFor = (req: Request): string =>
+  config.google.redirectUri || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+
+const googleAuthorizeUrl = (returnTo: string, callbackUrl: string): string => {
   const params = new URLSearchParams({
     client_id: config.google.clientId,
-    redirect_uri: config.google.redirectUri,
+    redirect_uri: callbackUrl,
     response_type: 'code',
     scope: 'email profile',
     prompt: 'select_account',
@@ -105,7 +112,7 @@ if (config.google.enabled) {
     // The browser reports its own origin: behind the Vite dev proxy the request
     // host is the API, so only the client knows where the session belongs next.
     const returnTo = safeReturnTo(req.query.returnTo, frontendBase());
-    res.json({ url: googleAuthorizeUrl(returnTo) });
+    res.json({ url: googleAuthorizeUrl(returnTo, callbackUrlFor(req)) });
   });
 
   router.get(
@@ -114,7 +121,7 @@ if (config.google.enabled) {
       passport.authenticate('google', {
         scope: ['email', 'profile'],
         session: false,
-        callbackURL: config.google.redirectUri,
+        callbackURL: callbackUrlFor(req),
         state: encodeState(startReturnTo(req)),
       })(req, res, next),
   );
@@ -126,7 +133,7 @@ if (config.google.enabled) {
     // page from the API instead of being sent back to the login screen.
     passport.authenticate(
       'google',
-      { session: false, callbackURL: config.google.redirectUri },
+      { session: false, callbackURL: callbackUrlFor(req) },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (err: unknown, user: any) => {
         const returnTo = returnToFromState(req.query.state);
@@ -145,8 +152,15 @@ if (config.google.enabled) {
   });
 
   console.log(
-    `[auth] Google sign-in ENABLED — callback ${config.google.redirectUri}, redirecting to ${frontendBase()}`
+    `[auth] Google sign-in ENABLED — callback ${config.google.redirectUri || '(derived from the request host)'}, redirecting to ${frontendBase()}`
   );
+  if (config.nodeEnv === 'production' && !config.frontendUrlConfigured) {
+    console.warn(
+      '[auth] FRONTEND_URL is not set. Google sign-in only accepts the default ' +
+        'http://localhost:5173 as a return address, so sessions will not come back to your real site. ' +
+        'Set FRONTEND_URL to your frontend domain on the host.'
+    );
+  }
 } else {
   // Without this a missing env var looked exactly like a broken route: a bare
   // "Cannot GET /api/auth/google" page. Answer with the same redirect flow the
