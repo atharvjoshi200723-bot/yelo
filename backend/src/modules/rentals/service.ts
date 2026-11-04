@@ -1,4 +1,5 @@
 import { query, transaction } from '../../lib/db';
+import { emitToAll } from '../../lib/realtime';
 import { AppError } from '../../middleware/errorHandler';
 import { CreateListingInput, SearchListingsQuery, CreateRequestInput } from './validators';
 
@@ -16,6 +17,25 @@ export async function createListing(userId: string, data: CreateListingInput) {
     'UPDATE rental_listings SET location_point = ST_MakePoint($1, $2)::geography WHERE id = $3',
     [data.locationLng, data.locationLat, listing.id]
   );
+
+  // Broadcast the new listing so open Rent pages prepend it live. Use the same
+  // joined shape as searchListings (category + owner names) — not the raw row —
+  // so the card renders. Incrementing views here is avoided on purpose.
+  const enriched = await query(
+    `SELECT rl.id, rl.owner_id, rl.category_id, rl.title, rl.description,
+            rl.price_per_day, rl.price_per_week, rl.price_per_month, rl.deposit,
+            rl.negotiable, rl.condition, rl.image_urls, rl.location_name,
+            rl.available_from, rl.available_until, rl.status, rl.views,
+            rl.created_at, rl.updated_at,
+            rc.name as category_name, rc.icon as category_icon,
+            p.name as owner_name, p.avatar_url as owner_avatar
+     FROM rental_listings rl
+     JOIN rental_categories rc ON rc.id = rl.category_id
+     JOIN profiles p ON p.user_id = rl.owner_id
+     WHERE rl.id = $1`,
+    [listing.id]
+  );
+  if (enriched.rows[0]) emitToAll('listing_created', enriched.rows[0]);
 
   return listing;
 }

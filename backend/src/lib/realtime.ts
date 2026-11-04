@@ -9,3 +9,14 @@ export function setRealtimeIO(server: Server) {
 export function getRealtimeIO() {
   return io;
 }
+
+/**
+ * Broadcast an event to every connected client.
+ *
+ * Used for "new/changed item" notifications on the public lists (home feed,
+ * rent, buddy) so an open page updates live instead of requiring a reload.
+ * No-op when the realtime server isn't started (e.g. during tests).
+ */
+export function emitToAll(event: string, payload: unknown) {
+  io?.emit(event, payload);
+}

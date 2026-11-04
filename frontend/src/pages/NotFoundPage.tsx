@@ -22,54 +22,68 @@ export default function NotFoundPage() {
   }, []);
 
   return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
-      {/* Animated compass icon */}
-      <div className="relative mb-8">
-        <div className="w-24 h-24 bg-cream-200 rounded-3xl flex items-center justify-center animate-pulse-slow">
-          <Compass size={40} className="text-navy-300" />
-        </div>
-        <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center shadow-glow">
-          <span className="text-navy-900 font-bold text-sm">?</span>
+    <div className="min-h-screen bg-[#EAE4FB] flex flex-col items-center justify-center text-center px-4 relative overflow-hidden">
+      {/* Floating candy-ball SVG decorations */}
+      <svg className="absolute top-10 left-8 animate-candy-float" width="54" height="54" viewBox="0 0 54 54" aria-hidden="true">
+        <circle cx="27" cy="27" r="26" fill="#E8622B" stroke="#1B1250" strokeWidth="3" />
+        <circle cx="17" cy="17" r="7" fill="white" fillOpacity="0.3" />
+      </svg>
+      <svg className="absolute top-16 right-10 animate-candy-float-slow" width="42" height="42" viewBox="0 0 42 42" aria-hidden="true">
+        <circle cx="21" cy="21" r="20" fill="#2FA3B5" stroke="#1B1250" strokeWidth="3" />
+        <circle cx="13" cy="13" r="5" fill="white" fillOpacity="0.3" />
+      </svg>
+      <svg className="absolute bottom-20 right-16 animate-candy-float-reverse" width="38" height="38" viewBox="0 0 38 38" aria-hidden="true">
+        <circle cx="19" cy="19" r="18" fill="#FFD41F" stroke="#1B1250" strokeWidth="3" />
+        <circle cx="12" cy="12" r="4" fill="white" fillOpacity="0.3" />
+      </svg>
+
+      {/* Big emoji in cream sticker circle */}
+      <div className="relative mb-8 animate-pop-in">
+        <div className="w-24 h-24 bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo rounded-[26px] flex items-center justify-center">
+          <span className="text-4xl" role="img" aria-label="Map">🗺️</span>
         </div>
       </div>
 
-      {/* Headline */}
-      <h1 className="font-display text-3xl sm:text-4xl text-navy-900 mb-3 leading-tight">
+      {/* Heading */}
+      <h1 className="font-display font-black text-4xl text-[#1B1250] mb-3 leading-tight">
         Looks like you've<br />wandered off
       </h1>
 
-      <p className="text-navy-400 text-sm sm:text-base max-w-xs mb-2">
+      <p className="font-bold text-[#1B1250]/70 text-sm sm:text-base max-w-xs mb-3">
         This place isn't on the map yet.
       </p>
 
-      <div className="flex items-center gap-1.5 text-navy-300 text-xs mb-8">
-        <MapPin size={12} />
-        <span>Dehradun · Unknown location</span>
+      {/* Location pill */}
+      <div className="inline-flex items-center gap-1.5 bg-[#FFD41F] border-3 border-[#1B1250] rounded-full px-4 py-1.5 shadow-neo-sm mb-8">
+        <MapPin size={13} className="text-[#1B1250]" />
+        <span className="text-xs font-black text-[#1B1250] uppercase tracking-wide">Dehradun · Unknown location</span>
       </div>
 
       {/* Primary CTA */}
       <Link
         to="/"
-        className="w-full max-w-xs bg-navy-900 text-cream-50 py-3.5 rounded-2xl font-medium hover:bg-navy-800 transition-all btn-press flex items-center justify-center gap-2 mb-3"
+        className="w-full max-w-xs bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-neo rounded-full font-display font-black uppercase py-3.5 flex items-center justify-center gap-2 mb-3 hover:translate-y-[-1px] transition-transform text-sm"
       >
         <ArrowLeft size={16} />
         Back to YELO
       </Link>
 
-      {/* Secondary suggestions */}
-      <p className="text-xs text-navy-400 font-medium tracking-wider uppercase mt-4 mb-3">
+      {/* Suggestions label */}
+      <p className="text-xs font-black text-[#1B1250]/50 tracking-wider uppercase mt-4 mb-3">
         Or explore nearby
       </p>
 
-      <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
-        {SUGGESTIONS.map(s => (
+      {/* Suggestions grid */}
+      <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
+        {SUGGESTIONS.map((s, i) => (
           <Link
             key={s.path}
             to={s.path}
-            className="bg-white border border-navy-100/30 rounded-xl py-3 px-4 text-left card-hover btn-press transition-all flex items-center gap-2"
+            style={{ transform: `rotate(${i % 2 === 0 ? '-1deg' : '1deg'})` }}
+            className="bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo rounded-[24px] py-3 px-4 text-left flex items-center gap-2 hover:translate-y-[-1px] transition-transform"
           >
             <span className="text-lg">{s.emoji}</span>
-            <span className="text-xs font-medium text-navy-700">{s.label}</span>
+            <span className="text-xs font-black text-[#1B1250]">{s.label}</span>
           </Link>
         ))}
       </div>

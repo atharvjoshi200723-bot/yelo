@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { ImagePicker } from '../components/ui/ImagePicker';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../lib/api';
-import { ArrowLeft } from 'lucide-react';
-import { ErrorState } from '../components/ui/FeedbackStates';
+import { ArrowLeft, Check } from 'lucide-react';
 
 interface Category { id: string; name: string; icon: string; }
 
@@ -12,7 +11,6 @@ const MIN_DESCRIPTION = 10;
 
 export default function CreateListingPage() {
   const navigate = useNavigate();
-  // /rent/edit/:id reuses this form to edit an existing listing.
   const { id: editId } = useParams<{ id: string }>();
   const isEditing = Boolean(editId);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -40,7 +38,6 @@ export default function CreateListingPage() {
     });
   }, []);
 
-  // Editing: load the listing and fill the form with what is already there.
   useEffect(() => {
     if (!editId) return;
     setListingLoading(true);
@@ -71,13 +68,11 @@ export default function CreateListingPage() {
 
   const update = (field: string, value: string | boolean) => {
     setForm(prev => ({ ...prev, [field]: value }));
-    // Clear field error when user starts typing
     if (fieldErrors[field]) {
       setFieldErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
     }
   };
 
-  // Client-side validation matching backend rules
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
 
@@ -131,7 +126,6 @@ export default function CreateListingPage() {
       const data = apiErr.response?.data;
 
       if (data?.code === 'VALIDATION_ERROR' && data?.fields) {
-        // Backend returned structured field errors
         setFieldErrors(data.fields);
         setError(data.error || 'Please fix the highlighted fields below.');
       } else {
@@ -144,175 +138,345 @@ export default function CreateListingPage() {
   const isFormValid = form.categoryId && form.title.trim().length >= MIN_TITLE && form.description.trim().length >= MIN_DESCRIPTION && form.pricePerDay && parseFloat(form.pricePerDay) >= 1 && form.availableFrom;
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-600 hover:text-slate-800 mb-4">
-        <ArrowLeft size={18} /> Back
+    <div className="w-full relative pb-16">
+      {/* Back Button */}
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="inline-flex items-center gap-2 px-4 py-2 bg-[#F6FBD4] hover:bg-white text-[#1B1250] border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] rounded-full text-xs font-black mb-5 transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+      >
+        <ArrowLeft size={16} strokeWidth={2.5} /> Back
       </button>
 
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h1 className="text-2xl font-bold text-slate-900 mb-6">
-          {isEditing ? 'Edit Listing' : 'List an Item for Rent'}
+      {/* Main Sticker Card Container */}
+      <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[28px] shadow-[6px_8px_0_#1B1250] p-5 sm:p-7 relative overflow-hidden">
+        {/* Title */}
+        <h1 className="font-display font-black text-2xl sm:text-3xl text-[#1B1250] tracking-tight leading-tight mb-6">
+          {isEditing ? (
+            <>
+              Edit <span className="inline-block bg-[#FFD41F] px-2 py-0.5 rounded-[8px] border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] -rotate-1">Listing</span>
+            </>
+          ) : (
+            <>
+              List an Item for <span className="inline-block bg-[#C5F030] px-2 py-0.5 rounded-[8px] border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] -rotate-1">Rent</span>
+            </>
+          )}
         </h1>
 
         {error && (
-          <div className="mb-4 p-3 bg-coral-50 border border-coral-200 rounded-xl">
-            <p className="text-sm text-coral-600">{error}</p>
-            <button onClick={() => setError(null)} className="text-xs text-coral-500 underline mt-1">Dismiss</button>
+          <div className="mb-5 p-3.5 bg-[#E8622B]/15 border-2.5 border-[#E8622B] rounded-[18px]">
+            <p className="text-xs font-black text-[#E8622B]">⚠️ {error}</p>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="text-[10px] font-black text-[#E8622B] underline mt-1 uppercase tracking-wider"
+            >
+              Dismiss
+            </button>
           </div>
         )}
 
-        {listingLoading ? (
+        {listingLoading || categoriesLoading ? (
           <div className="space-y-4">
-            {[1,2,3].map(i => <div key={i} className="h-12 skeleton rounded-xl" />)}
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-14 bg-white/70 border-2.5 border-[#1B1250]/30 rounded-[18px] animate-pulse" />
+            ))}
           </div>
         ) : listingError ? (
-          <div className="mb-4 p-3 bg-coral-50 border border-coral-200 rounded-xl">
-            <p className="text-sm text-coral-600">{listingError}</p>
-          </div>
-        ) : categoriesLoading ? (
-          <div className="space-y-4">
-            {[1,2,3].map(i => <div key={i} className="h-12 skeleton rounded-xl" />)}
+          <div className="p-4 bg-[#E8622B]/15 border-2.5 border-[#E8622B] rounded-[18px]">
+            <p className="text-xs font-black text-[#E8622B]">⚠️ {listingError}</p>
           </div>
         ) : (
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Category *</label>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {categories.map(cat => (
-                <button key={cat.id} type="button" onClick={() => update('categoryId', cat.id)}
-                  className={`p-3 rounded-xl border-2 text-center transition-colors ${
-                    form.categoryId === cat.id ? 'border-brand-500 bg-brand-50' : 'border-slate-200 hover:border-slate-300'
-                  }`}>
-                  <span className="text-2xl block mb-1">{cat.icon}</span>
-                  <span className="text-xs text-slate-700">{cat.name}</span>
-                </button>
-              ))}
-            </div>
-            {fieldErrors.categoryId && <p className="text-xs text-coral-500 mt-1">{fieldErrors.categoryId}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Title *</label>
-            <input type="text" value={form.title} onChange={e => update('title', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 ${
-                fieldErrors.title ? 'border-coral-300 bg-coral-50/30' : 'border-slate-200'
-              }`}
-              placeholder="e.g., Sony Projector - Great for presentations" />
-            <div className="flex justify-between mt-1">
-              {fieldErrors.title ? (
-                <p className="text-xs text-coral-500">{fieldErrors.title}</p>
-              ) : (
-                <p className="text-xs text-slate-400">Min {MIN_TITLE} characters</p>
-              )}
-              <p className={`text-xs ${form.title.length < MIN_TITLE && form.title.length > 0 ? 'text-coral-500' : 'text-slate-400'}`}>
-                {form.title.length} / {MIN_TITLE}
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Description *</label>
-            <textarea value={form.description} onChange={e => update('description', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[120px] ${
-                fieldErrors.description ? 'border-coral-300 bg-coral-50/30' : 'border-slate-200'
-              }`}
-              placeholder="Describe your item, its condition, any accessories included..." />
-            <div className="flex justify-between mt-1">
-              {fieldErrors.description ? (
-                <p className="text-xs text-coral-500">{fieldErrors.description}</p>
-              ) : (
-                <p className="text-xs text-slate-400">Min {MIN_DESCRIPTION} characters</p>
-              )}
-              <p className={`text-xs ${form.description.trim().length > 0 && form.description.trim().length < MIN_DESCRIPTION ? 'text-coral-500' : 'text-slate-400'}`}>
-                {form.description.trim().length} / {MIN_DESCRIPTION}
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Photos</label>
-            <ImagePicker value={imageUrls} onChange={setImageUrls} max={5} />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Condition *</label>
-            <select value={form.condition} onChange={e => update('condition', e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 ${
-                fieldErrors.condition ? 'border-coral-300 bg-coral-50/30' : 'border-slate-200'
-              }`}>
-              <option value="new">New</option>
-              <option value="like_new">Like New</option>
-              <option value="good">Good</option>
-              <option value="fair">Fair</option>
-            </select>
-            {fieldErrors.condition && <p className="text-xs text-coral-500 mt-1">{fieldErrors.condition}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+            {/* Category Grid: Square Sticker Cards */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">₹/Day *</label>
-              <input type="number" value={form.pricePerDay} onChange={e => update('pricePerDay', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${
-                  fieldErrors.pricePerDay ? 'border-coral-300 bg-coral-50/30' : 'border-slate-200'
+              <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-2.5">
+                Category <span className="text-[#E8622B]">*</span>
+              </label>
+
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                {categories.map((cat, index) => {
+                  const isSelected = form.categoryId === cat.id;
+                  const tiltClass = index % 2 === 0 ? '-rotate-2' : 'rotate-2';
+
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => update('categoryId', cat.id)}
+                      className={`aspect-square flex flex-col items-center justify-center p-2.5 rounded-[20px] transition-all duration-200 select-none cursor-pointer border-3 border-[#1B1250] ${
+                        isSelected
+                          ? `bg-[#C5F030] text-[#1B1250] shadow-[4px_5px_0_#1B1250] scale-[1.05] ${tiltClass} z-10`
+                          : 'bg-white hover:bg-[#F6FBD4] text-[#1B1250] shadow-[2px_3px_0_#1B1250] active:scale-95'
+                      }`}
+                    >
+                      <span className="text-3xl sm:text-4xl block mb-1.5 transition-transform">
+                        {cat.icon}
+                      </span>
+                      <span className="text-[11px] font-black text-[#1B1250] leading-tight text-center line-clamp-2">
+                        {cat.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {fieldErrors.categoryId && (
+                <p className="text-xs font-black text-[#E8622B] mt-1.5 flex items-center gap-1">
+                  ⚠️ {fieldErrors.categoryId}
+                </p>
+              )}
+            </div>
+
+            {/* Title with min 5 characters counter */}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-1.5">
+                Title <span className="text-[#E8622B]">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.title}
+                onChange={e => update('title', e.target.value)}
+                placeholder="e.g., Sony Projector - Great for presentations"
+                className={`w-full px-4 py-3.5 bg-white border-3 border-[#1B1250] rounded-[20px] shadow-[3px_4px_0_#1B1250] focus:shadow-[4px_6px_0_#1B1250] focus:outline-none text-[#1B1250] font-bold text-sm placeholder:text-[#1B1250]/40 transition-all ${
+                  fieldErrors.title ? 'border-[#E8622B] shadow-[3px_4px_0_#E8622B]' : ''
                 }`}
-                placeholder="0" min="1" />
-              {fieldErrors.pricePerDay && <p className="text-xs text-coral-500 mt-1">{fieldErrors.pricePerDay}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">₹/Week</label>
-              <input type="number" value={form.pricePerWeek} onChange={e => update('pricePerWeek', e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                placeholder="Optional" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">₹/Month</label>
-              <input type="number" value={form.pricePerMonth} onChange={e => update('pricePerMonth', e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                placeholder="Optional" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Deposit</label>
-              <input type="number" value={form.deposit} onChange={e => update('deposit', e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                placeholder="Optional" />
-            </div>
-          </div>
+              />
 
-          <div className="flex items-center gap-3">
-            <input type="checkbox" id="negotiable" checked={form.negotiable} onChange={e => update('negotiable', e.target.checked)}
-              className="w-4 h-4 text-brand-600 rounded" />
-            <label htmlFor="negotiable" className="text-sm text-slate-700">Price is negotiable</label>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
-            <input type="text" value={form.locationName} onChange={e => update('locationName', e.target.value)}
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
-              placeholder="e.g., Near Graphic Era University, Dehradun" />
-            <p className="text-xs text-slate-400 mt-1">Your exact location is never shared publicly</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Available From *</label>
-              <input type="date" value={form.availableFrom} onChange={e => update('availableFrom', e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 ${
-                  fieldErrors.availableFrom ? 'border-coral-300 bg-coral-50/30' : 'border-slate-200'
-                }`} />
-              {fieldErrors.availableFrom && <p className="text-xs text-coral-500 mt-1">{fieldErrors.availableFrom}</p>}
+              <div className="flex justify-between items-center mt-1.5 px-1">
+                {fieldErrors.title ? (
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#E8622B]">
+                    ⚠️ {fieldErrors.title}
+                  </p>
+                ) : (
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#1B1250]/60">
+                    MIN {MIN_TITLE} CHARACTERS
+                  </p>
+                )}
+                <p
+                  className={`text-[10px] font-black uppercase tracking-wider ${
+                    form.title.length < MIN_TITLE && form.title.length > 0
+                      ? 'text-[#E8622B]'
+                      : 'text-[#1B1250]/70'
+                  }`}
+                >
+                  {form.title.length} / {MIN_TITLE}
+                </p>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Available Until</label>
-              <input type="date" value={form.availableUntil} onChange={e => update('availableUntil', e.target.value)}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            </div>
-          </div>
 
-          <button type="submit" disabled={loading || !isFormValid}
-            className="w-full bg-brand-600 text-white py-3 rounded-xl font-medium hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            {loading ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Listing')}
-          </button>
-        </form>
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-1.5">
+                Description <span className="text-[#E8622B]">*</span>
+              </label>
+              <textarea
+                value={form.description}
+                onChange={e => update('description', e.target.value)}
+                placeholder="Describe your item, its condition, any accessories included..."
+                className={`w-full px-4 py-3.5 bg-white border-3 border-[#1B1250] rounded-[20px] shadow-[3px_4px_0_#1B1250] focus:shadow-[4px_6px_0_#1B1250] focus:outline-none min-h-[120px] resize-none text-[#1B1250] font-bold text-sm placeholder:text-[#1B1250]/40 transition-all ${
+                  fieldErrors.description ? 'border-[#E8622B] shadow-[3px_4px_0_#E8622B]' : ''
+                }`}
+              />
+
+              <div className="flex justify-between items-center mt-1.5 px-1">
+                {fieldErrors.description ? (
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#E8622B]">
+                    ⚠️ {fieldErrors.description}
+                  </p>
+                ) : (
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#1B1250]/60">
+                    MIN {MIN_DESCRIPTION} CHARACTERS
+                  </p>
+                )}
+                <p
+                  className={`text-[10px] font-black uppercase tracking-wider ${
+                    form.description.trim().length > 0 && form.description.trim().length < MIN_DESCRIPTION
+                      ? 'text-[#E8622B]'
+                      : 'text-[#1B1250]/70'
+                  }`}
+                >
+                  {form.description.trim().length} / {MIN_DESCRIPTION}
+                </p>
+              </div>
+            </div>
+
+            {/* Photos */}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-1.5">
+                Photos
+              </label>
+              <div className="bg-white border-2.5 border-[#1B1250] rounded-[20px] p-3.5 shadow-[2px_3px_0_#1B1250]">
+                <ImagePicker value={imageUrls} onChange={setImageUrls} max={5} />
+              </div>
+            </div>
+
+            {/* Condition */}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-1.5">
+                Condition <span className="text-[#E8622B]">*</span>
+              </label>
+              <select
+                value={form.condition}
+                onChange={e => update('condition', e.target.value)}
+                className={`w-full px-4 py-3 bg-white border-3 border-[#1B1250] rounded-[20px] shadow-[3px_4px_0_#1B1250] focus:shadow-[4px_6px_0_#1B1250] text-[#1B1250] font-bold text-sm focus:outline-none cursor-pointer ${
+                  fieldErrors.condition ? 'border-[#E8622B]' : ''
+                }`}
+              >
+                <option value="new">New</option>
+                <option value="like_new">Like New</option>
+                <option value="good">Good</option>
+                <option value="fair">Fair</option>
+              </select>
+              {fieldErrors.condition && (
+                <p className="text-xs font-black text-[#E8622B] mt-1.5">⚠️ {fieldErrors.condition}</p>
+              )}
+            </div>
+
+            {/* Pricing Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-1.5">
+                  ₹/Day <span className="text-[#E8622B]">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={form.pricePerDay}
+                  onChange={e => update('pricePerDay', e.target.value)}
+                  placeholder="0"
+                  min="1"
+                  className={`w-full px-3.5 py-2.5 bg-white border-2.5 border-[#1B1250] rounded-[18px] shadow-[2px_3px_0_#1B1250] text-[#1B1250] font-bold text-sm focus:outline-none ${
+                    fieldErrors.pricePerDay ? 'border-[#E8622B]' : ''
+                  }`}
+                />
+                {fieldErrors.pricePerDay && (
+                  <p className="text-[10px] font-black text-[#E8622B] mt-1">⚠️ {fieldErrors.pricePerDay}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-1.5">
+                  ₹/Week
+                </label>
+                <input
+                  type="number"
+                  value={form.pricePerWeek}
+                  onChange={e => update('pricePerWeek', e.target.value)}
+                  placeholder="Optional"
+                  className="w-full px-3.5 py-2.5 bg-white border-2.5 border-[#1B1250] rounded-[18px] shadow-[2px_3px_0_#1B1250] text-[#1B1250] font-bold text-sm focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-1.5">
+                  ₹/Month
+                </label>
+                <input
+                  type="number"
+                  value={form.pricePerMonth}
+                  onChange={e => update('pricePerMonth', e.target.value)}
+                  placeholder="Optional"
+                  className="w-full px-3.5 py-2.5 bg-white border-2.5 border-[#1B1250] rounded-[18px] shadow-[2px_3px_0_#1B1250] text-[#1B1250] font-bold text-sm focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-1.5">
+                  Deposit
+                </label>
+                <input
+                  type="number"
+                  value={form.deposit}
+                  onChange={e => update('deposit', e.target.value)}
+                  placeholder="Optional"
+                  className="w-full px-3.5 py-2.5 bg-white border-2.5 border-[#1B1250] rounded-[18px] shadow-[2px_3px_0_#1B1250] text-[#1B1250] font-bold text-sm focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Price is negotiable checkbox */}
+            <div
+              onClick={() => update('negotiable', !form.negotiable)}
+              className="flex items-center gap-3 p-3 bg-white border-2.5 border-[#1B1250] rounded-[18px] shadow-[2px_2px_0_#1B1250] cursor-pointer select-none active:translate-x-0.5 active:translate-y-0.5"
+            >
+              <div
+                className={`w-5 h-5 rounded-md border-2 border-[#1B1250] flex items-center justify-center transition-colors ${
+                  form.negotiable ? 'bg-[#C5F030]' : 'bg-white'
+                }`}
+              >
+                {form.negotiable && <Check size={14} strokeWidth={3} className="text-[#1B1250]" />}
+              </div>
+              <label htmlFor="negotiable" className="text-xs font-black text-[#1B1250] cursor-pointer">
+                Price is negotiable
+              </label>
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-1.5">
+                Location
+              </label>
+              <input
+                type="text"
+                value={form.locationName}
+                onChange={e => update('locationName', e.target.value)}
+                placeholder="e.g., Near Graphic Era University, Dehradun"
+                className="w-full px-4 py-3.5 bg-white border-3 border-[#1B1250] rounded-[20px] shadow-[3px_4px_0_#1B1250] focus:shadow-[4px_6px_0_#1B1250] text-[#1B1250] font-bold text-sm placeholder:text-[#1B1250]/40 focus:outline-none transition-all"
+              />
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#1B1250]/60 mt-1.5 px-1">
+                Your exact location is never shared publicly
+              </p>
+            </div>
+
+            {/* Availability Dates */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-1.5">
+                  Available From <span className="text-[#E8622B]">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={form.availableFrom}
+                  onChange={e => update('availableFrom', e.target.value)}
+                  className={`w-full px-3.5 py-3 bg-white border-2.5 border-[#1B1250] rounded-[18px] shadow-[2px_3px_0_#1B1250] text-[#1B1250] font-bold text-xs focus:outline-none ${
+                    fieldErrors.availableFrom ? 'border-[#E8622B]' : ''
+                  }`}
+                />
+                {fieldErrors.availableFrom && (
+                  <p className="text-[10px] font-black text-[#E8622B] mt-1">⚠️ {fieldErrors.availableFrom}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-[#1B1250] mb-1.5">
+                  Available Until
+                </label>
+                <input
+                  type="date"
+                  value={form.availableUntil}
+                  onChange={e => update('availableUntil', e.target.value)}
+                  className="w-full px-3.5 py-3 bg-white border-2.5 border-[#1B1250] rounded-[18px] shadow-[2px_3px_0_#1B1250] text-[#1B1250] font-bold text-xs focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Big Lime Submit Button */}
+            <div className="pt-3">
+              <button
+                type="submit"
+                disabled={loading || !isFormValid}
+                className={`w-full py-4 px-6 rounded-full font-display font-black text-sm uppercase tracking-wider select-none transition-all duration-150 flex items-center justify-center gap-2 ${
+                  isFormValid && !loading
+                    ? 'bg-[#C5F030] hover:bg-[#bcf01a] text-[#1B1250] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] active:translate-x-[2px] active:translate-y-[3px] active:shadow-[1px_1px_0_#1B1250] cursor-pointer'
+                    : 'bg-[#E0E2C8] text-[#1B1250]/40 border-2.5 border-[#1B1250]/30 shadow-none cursor-not-allowed'
+                }`}
+              >
+                {loading
+                  ? (isEditing ? 'Saving...' : 'Creating...')
+                  : (isEditing ? 'Save Changes' : 'Create Listing')}
+              </button>
+            </div>
+          </form>
         )}
       </div>
     </div>

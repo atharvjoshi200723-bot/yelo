@@ -36,13 +36,13 @@ function GoogleLogin({ onError }: { onError: (message: string) => void }) {
       type="button"
       onClick={start}
       disabled={connecting}
-      className="w-full flex items-center justify-center gap-3 bg-google-blue text-white py-3 rounded-xl font-medium hover:bg-google-blue-dark transition-colors disabled:opacity-60"
+      className="w-full flex items-center justify-center gap-3 bg-white text-[#1B1250] border-3 border-[#1B1250] shadow-neo rounded-full py-3.5 font-display font-black text-sm uppercase hover:translate-y-[-1px] transition-transform disabled:opacity-60"
     >
       <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-        <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h10.08c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-        <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.44-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-        <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-        <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l2.39-2.39C17.45 2.67 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.81-1.34 2.63-2.41 4.6-2.41z" />
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h10.08c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.44-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l2.39-2.39C17.45 2.67 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.81-1.34 2.63-2.41 4.6-2.41z" />
       </svg>
       {connecting ? 'Connecting…' : 'Sign in with Google'}
     </button>
@@ -89,71 +89,100 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-accent-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-navy-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-amber-400 font-display text-2xl">Y</span>
+    <div className="min-h-screen bg-[#9A63E6] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Floating candy-ball decorations */}
+      <svg className="absolute top-8 left-6 animate-candy-float" width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
+        <circle cx="28" cy="28" r="27" fill="#E8622B" stroke="#1B1250" strokeWidth="3" />
+        <circle cx="17" cy="18" r="7" fill="white" fillOpacity="0.3" />
+      </svg>
+      <svg className="absolute top-16 right-8 animate-candy-float-slow" width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
+        <circle cx="22" cy="22" r="21" fill="#FFD41F" stroke="#1B1250" strokeWidth="3" />
+        <circle cx="13" cy="13" r="5" fill="white" fillOpacity="0.3" />
+      </svg>
+      <svg className="absolute bottom-20 left-10 animate-candy-float-reverse" width="38" height="38" viewBox="0 0 38 38" aria-hidden="true">
+        <circle cx="19" cy="19" r="18" fill="#2FA3B5" stroke="#1B1250" strokeWidth="3" />
+        <circle cx="11" cy="12" r="4" fill="white" fillOpacity="0.3" />
+      </svg>
+      <svg className="absolute bottom-32 right-6 animate-candy-float" width="48" height="48" viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r="23" fill="#C5F030" stroke="#1B1250" strokeWidth="3" />
+        <circle cx="15" cy="15" r="6" fill="white" fillOpacity="0.3" />
+      </svg>
+
+      <div className="w-full max-w-md relative z-10">
+        {/* YELO wordmark */}
+        <div className="text-center mb-6">
+          <div className="inline-block bg-[#1B1250] rounded-[20px] border-3 border-[#1B1250] shadow-neo px-7 py-3 mb-4">
+            <span className="font-display font-black text-5xl text-[#C5F030] tracking-tight">YELO</span>
           </div>
-          <h1 className="font-display text-3xl text-navy-900">Welcome back</h1>
-          <p className="text-navy-400 mt-2">Sign in to YELO</p>
+          <p className="text-white font-bold text-sm opacity-80">Welcome back — sign in</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8 space-y-5">
-          {error && (
-            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm">{error}</div>
-          )}
+        {/* Cream sticker card */}
+        <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[28px] shadow-[8px_10px_0_#1B1250] p-7">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="bg-[#E8622B]/10 border-2 border-[#E8622B] rounded-[16px] text-[#1B1250] font-bold text-sm px-4 py-3">
+                {error}
+              </div>
+            )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-            <div className="relative">
+            <div>
+              <label className="block text-xs font-black text-[#1B1250] uppercase tracking-wider mb-1.5">Email</label>
               <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent pr-12"
-                placeholder="Enter your password"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none"
+                placeholder="you@example.com"
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-              </button>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-brand-600 text-white py-3 rounded-xl font-medium hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
+            <div>
+              <label className="block text-xs font-black text-[#1B1250] uppercase tracking-wider mb-1.5">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none pr-14"
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full border-3 border-[#1B1250] bg-[#F6FBD4] flex items-center justify-center text-[#1B1250] hover:bg-[#1B1250] hover:text-[#F6FBD4] transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+                </button>
+              </div>
+            </div>
 
-          <GoogleLogin onError={setError} />
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-neo rounded-full font-display font-black uppercase py-3.5 w-full disabled:bg-[#E0E2C8] disabled:text-[#1B1250]/40 disabled:cursor-not-allowed hover:translate-y-[-1px] transition-transform text-sm"
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
 
-          <p className="text-center text-sm text-slate-500 mt-4">
-            Don’t have an account?{' '}
-            <Link to="/register" className="text-brand-600 hover:text-brand-700 font-medium">Sign up</Link>
-          </p>
+            {/* Divider */}
+            <div className="relative flex items-center gap-3">
+              <div className="flex-1 border-t-2 border-[#1B1250]/20" />
+              <span className="text-xs font-black text-[#1B1250]/50 uppercase tracking-wider">or</span>
+              <div className="flex-1 border-t-2 border-[#1B1250]/20" />
+            </div>
 
-        </form>
+            <GoogleLogin onError={setError} />
+
+            <p className="text-center text-sm font-bold text-[#1B1250] mt-2">
+              Don't have an account?{' '}
+              <Link to="/register" className="font-black text-[#1B1250] underline hover:text-[#9A63E6] transition-colors">Sign up</Link>
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   );

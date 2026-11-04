@@ -1,8 +1,10 @@
 import { query } from '../../lib/db';
+import { emitToAll } from '../../lib/realtime';
 import { AppError } from '../../middleware/errorHandler';
 import { CreateBuddyProfileInput, SearchBuddyQuery, CreateBuddyRequestInput } from './validators';
 
 export async function createOrUpdateProfile(userId: string, data: CreateBuddyProfileInput) {
+  let profile: Record<string, unknown>;
 
   const existing = await query('SELECT id FROM buddy_profiles WHERE user_id = $1', [userId]);
   
@@ -28,7 +30,7 @@ export async function createOrUpdateProfile(userId: string, data: CreateBuddyPro
         [data.locationLng, data.locationLat, userId]
       );
     }
-    return result.rows[0];
+    profile = result.rows[0];
   } else {
     const result = await query(
       `INSERT INTO buddy_profiles (user_id, buddy_type, title, description, activities, price_per_hour, negotiable,
@@ -50,8 +52,25 @@ export async function createOrUpdateProfile(userId: string, data: CreateBuddyPro
         [data.locationLng, data.locationLat, userId]
       );
     }
-    return result.rows[0];
+    profile = result.rows[0];
   }
+
+  // Broadcast the (new or updated) profile so open Buddy pages update live.
+  // Join the profile fields the search shape + card read; frontend upserts by id.
+  const enriched = await query(
+    `SELECT bp.id, bp.user_id, bp.buddy_type, bp.title, bp.description, bp.activities,
+            bp.price_per_hour, bp.negotiable, bp.availability_days, bp.availability_times,
+            bp.location_name, bp.gender, bp.image_urls, bp.avg_rating, bp.total_reviews,
+            bp.total_sessions, bp.status, bp.created_at, bp.updated_at,
+            p.name, p.avatar_url, p.city, p.college, p.gender as profile_gender, p.date_of_birth
+     FROM buddy_profiles bp
+     JOIN profiles p ON p.user_id = bp.user_id
+     WHERE bp.id = $1`,
+    [profile.id]
+  );
+  if (enriched.rows[0]) emitToAll('buddy_updated', enriched.rows[0]);
+
+  return profile;
 }
 
 export async function updateMyProfile(userId: string, data: Record<string, unknown>) {

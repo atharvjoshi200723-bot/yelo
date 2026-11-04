@@ -14,17 +14,17 @@ export default function LinkupPage({ onClose }: LinkupPageProps) {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-display-lg text-navy-900">Linkup</h1>
-          <p className="text-sm text-navy-400 mt-1">
+          <h1 className="font-display font-black text-2xl text-[#1B1250]">Linkup</h1>
+          <p className="text-sm font-bold text-[#1B1250]/50 mt-1">
             Create a plan and share it with your community.
           </p>
         </div>
         <button
           onClick={onClose}
-          className="p-2 hover:bg-navy-50 rounded-xl transition-colors"
+          className="w-10 h-10 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] flex items-center justify-center transition-all active:translate-y-[2px] active:shadow-none"
           aria-label="Close"
         >
-          <X size={20} className="text-navy-400" />
+          <X size={18} className="text-[#1B1250]" />
         </button>
       </div>
 
@@ -32,12 +32,12 @@ export default function LinkupPage({ onClose }: LinkupPageProps) {
       <div className="space-y-4">
         <button
           onClick={() => setOpenCreate(true)}
-          className="w-full py-3 bg-navy-900 text-cream-50 rounded-xl font-medium hover:bg-navy-800 transition-all duration-200 btn-press flex items-center justify-center gap-2"
+          className="w-full py-3 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] rounded-full font-display font-black uppercase tracking-wide transition-all active:translate-y-[2px] active:shadow-none flex items-center justify-center gap-2"
         >
           Create Linkup
         </button>
 
-        <p className="text-sm text-navy-400 text-center">
+        <p className="text-sm font-bold text-[#1B1250]/40 text-center">
           This is the Linkup interface. Use the button above to open the full create plan form.
         </p>
       </div>

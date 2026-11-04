@@ -15,64 +15,91 @@ export default function TopBar() {
       try {
         const res = await api.get('/notifications?limit=1');
         setUnreadCount(res.data.unreadCount || 0);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
 
+  // Display initial: fallback to 'A' as specified in design brief if no user name/email
+  const userInitial = user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'A';
+
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-cream-50/95 backdrop-blur-lg z-50">
-      <div className="max-w-lg mx-auto flex items-center justify-between h-full px-4">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <span className="font-display text-xl text-navy-900 tracking-tight">YELO</span>
+    <header className="fixed top-0 left-0 right-0 h-16 bg-[#F6FBD4] z-50 border-b-3 border-[#1B1250] shadow-[0_2px_0_#1B1250]">
+      <div className="max-w-[480px] mx-auto flex items-center justify-between h-full px-4">
+        {/* YELO Wordmark: Chunky and lime-outlined on navy sticker */}
+        <Link
+          to="/"
+          className="flex items-center select-none active:translate-x-0.5 active:translate-y-0.5 transition-transform"
+        >
+          <div className="bg-[#1B1250] text-[#C5F030] px-3 py-1 rounded-[12px] border-2.5 border-[#C5F030] shadow-[2px_3px_0_#1B1250] flex items-center justify-center">
+            <span
+              className="font-display font-black text-xl tracking-tight leading-none"
+              style={{
+                textShadow: '0 0 1px #C5F030',
+                letterSpacing: '-0.03em',
+              }}
+            >
+              YELO
+            </span>
+          </div>
         </Link>
 
-        {/* Location */}
-        <div className="flex items-center gap-1 text-navy-400">
-          <MapPin size={14} className="location-pulse" />
-          <span className="text-xs font-medium tracking-wide uppercase">Dehradun</span>
-          <ChevronDown size={12} />
+        {/* City Selector: Small Pill */}
+        <div className="flex items-center gap-1.5 bg-[#EAE4FB] hover:bg-[#F5F2FF] text-[#1B1250] px-3 py-1 rounded-full border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] select-none cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none">
+          <MapPin size={13} className="text-[#E8622B] shrink-0 fill-[#E8622B]" />
+          <span className="text-[11px] font-black tracking-wider uppercase">Dehradun</span>
+          <ChevronDown size={12} strokeWidth={3} className="text-[#1B1250]" />
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
+        {/* Actions: Circular Bell & Avatar */}
+        <div className="flex items-center gap-2.5">
+          {/* Circular Bell Button with Navy Outline */}
           <button
             onClick={() => navigate('/notifications')}
-            className="relative p-2 hover:bg-navy-50 rounded-xl transition-colors"
+            className="relative w-9 h-9 rounded-full bg-white hover:bg-[#EAE4FB] border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] flex items-center justify-center transition-all duration-150 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
           >
-            <Bell size={20} className="text-navy-600" aria-hidden="true" />
+            <Bell size={18} strokeWidth={2.5} className="text-[#1B1250]" aria-hidden="true" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-coral-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center" aria-hidden="true">
+              <span
+                className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-[#E8622B] text-white text-[10px] font-black rounded-full border-2 border-[#1B1250] flex items-center justify-center shadow-[1px_1px_0_#1B1250]"
+                aria-hidden="true"
+              >
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
 
-          {/* Profile avatar */}
+          {/* Circular Avatar with Colored Ring and Navy Outline */}
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="w-8 h-8 bg-navy-900 rounded-full flex items-center justify-center"
+              className="w-9 h-9 rounded-full bg-[#1B1250] border-2.5 border-[#1B1250] ring-3 ring-[#9A63E6] shadow-[2px_2px_0_#1B1250] flex items-center justify-center transition-transform active:scale-95 select-none focus:outline-none"
               aria-label="Open profile menu"
               aria-expanded={showMenu}
               aria-haspopup="true"
             >
-              <span className="text-cream-50 font-medium text-xs">
-                {user?.name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || '?'}
+              <span className="text-[#F6FBD4] font-black text-xs">
+                {userInitial}
               </span>
             </button>
 
+            {/* Profile Dropdown Menu */}
             {showMenu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lifted border border-navy-100/30 py-2 z-50 animate-scale-in" role="menu" aria-label="Profile menu">
+                <div
+                  className="absolute right-0 top-full mt-2 w-48 bg-[#F6FBD4] rounded-[20px] border-3 border-[#1B1250] shadow-[5px_6px_0_#1B1250] py-2 z-50 animate-pop-in overflow-hidden"
+                  role="menu"
+                  aria-label="Profile menu"
+                >
                   <Link
                     to="/profile/settings"
-                    className="block px-4 py-2 text-sm text-navy-700 hover:bg-cream-100 transition-colors"
+                    className="block px-4 py-2 text-xs font-black text-[#1B1250] hover:bg-[#C5F030] transition-colors border-b-2 border-[#1B1250]/15"
                     onClick={() => setShowMenu(false)}
                   >
                     Profile Settings
@@ -80,18 +107,21 @@ export default function TopBar() {
                   {user?.role === 'admin' && (
                     <Link
                       to="/admin"
-                      className="block px-4 py-2 text-sm text-navy-700 hover:bg-cream-100 transition-colors"
+                      className="block px-4 py-2 text-xs font-black text-[#1B1250] hover:bg-[#C5F030] transition-colors border-b-2 border-[#1B1250]/15"
                       onClick={() => setShowMenu(false)}
                     >
                       Admin
                     </Link>
                   )}
-                  <hr className="my-1 border-navy-100/30" />
                   <button
-                    onClick={() => { logout(); navigate('/login'); setShowMenu(false); }}
-                    className="w-full text-left px-4 py-2 text-sm text-coral-500 hover:bg-coral-500/5 transition-colors flex items-center gap-2"
+                    onClick={() => {
+                      logout();
+                      navigate('/login');
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs font-black text-[#E8622B] hover:bg-[#E8622B]/10 transition-colors flex items-center gap-2"
                   >
-                    <LogOut size={14} /> Sign out
+                    <LogOut size={14} strokeWidth={2.5} /> Sign out
                   </button>
                 </div>
               </>

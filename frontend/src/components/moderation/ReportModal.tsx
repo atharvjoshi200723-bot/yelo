@@ -55,15 +55,25 @@ export default function ReportModal({ targetType, targetId, onClose }: ReportMod
 
   if (submitted) {
     return (
-      <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true" aria-label="Report submitted">
-        <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-6 animate-slide-up text-center">
-          <div className="w-16 h-16 bg-sage-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Flag size={32} className="text-sage-600" />
+      <div
+        className="fixed inset-0 bg-[#1B1250]/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Report submitted"
+      >
+        <div className="relative bg-[#F6FBD4] w-full sm:max-w-md sm:rounded-[28px] rounded-t-[28px] p-6 border-3 border-[#1B1250] shadow-[8px_10px_0_#1B1250] text-center">
+          {/* Candy-ball decoration */}
+          <div className="absolute -top-4 -right-4 w-10 h-10 rounded-full bg-[#E8622B] border-2 border-[#1B1250] flex items-center justify-center overflow-hidden">
+            <div className="absolute top-1.5 left-1.5 w-2 h-2 rounded-full bg-white/60" />
           </div>
-          <h3 className="font-display text-xl text-navy-900 mb-2">Report submitted</h3>
-          <p className="text-sm text-navy-500 mb-6">Our team will review this report.</p>
-          <button onClick={onClose}
-            className="w-full bg-navy-900 text-cream-50 py-3 rounded-2xl font-medium hover:bg-navy-800 transition-all btn-press">
+
+          <div className="text-5xl mb-4">✅</div>
+          <h3 className="font-display font-black text-xl text-[#1B1250] mb-2">Report submitted</h3>
+          <p className="text-sm font-bold text-[#1B1250]/60 mb-6">Our team will review this report. Thank you for keeping YELO safe.</p>
+          <button
+            onClick={onClose}
+            className="w-full py-3 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] rounded-full font-display font-black uppercase tracking-wide transition-all active:translate-y-[2px] active:shadow-none"
+          >
             Done
           </button>
         </div>
@@ -72,43 +82,63 @@ export default function ReportModal({ targetType, targetId, onClose }: ReportMod
   }
 
   return (
-    <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true" aria-label="Report content">
-      <div ref={modalRef} tabIndex={-1} className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-[#1B1250]/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Report content"
+    >
+      <div
+        ref={modalRef}
+        tabIndex={-1}
+        className="relative bg-[#F6FBD4] w-full sm:max-w-md sm:rounded-[28px] rounded-t-[28px] p-6 border-3 border-[#1B1250] shadow-[8px_10px_0_#1B1250] max-h-[90vh] overflow-y-auto focus:outline-none"
+      >
+        {/* Candy-ball decoration */}
+        <div className="absolute -top-4 -right-4 w-10 h-10 rounded-full bg-[#E8622B] border-2 border-[#1B1250] flex items-center justify-center overflow-hidden">
+          <div className="absolute top-1.5 left-1.5 w-2 h-2 rounded-full bg-white/60" />
+        </div>
+
+        {/* Header */}
         <div className="flex items-center justify-between mb-5">
-          <h3 className="font-display text-xl text-navy-900">Report</h3>
-          <button onClick={onClose} className="p-2 hover:bg-cream-100 rounded-xl transition-colors" aria-label="Close report dialog">
-            <X size={20} className="text-navy-400" aria-hidden="true" />
+          <h3 className="font-display font-black text-xl text-[#1B1250]">Report</h3>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] flex items-center justify-center transition-all active:translate-y-[2px] active:shadow-none"
+            aria-label="Close report dialog"
+          >
+            <X size={18} className="text-[#1B1250]" aria-hidden="true" />
           </button>
         </div>
 
-        <p className="text-sm text-navy-500 mb-4">Why are you reporting this?</p>
+        <p className="text-xs font-black text-[#9A63E6] uppercase tracking-wider mb-3">Why are you reporting this?</p>
 
-        <div className="space-y-2 mb-5">
+        {/* Reason chips */}
+        <div className="flex flex-wrap gap-2 mb-5">
           {REPORT_REASONS.map(r => (
             <button
               key={r.value}
               onClick={() => setReason(r.value)}
-              className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-black uppercase border-3 border-[#1B1250] transition-all active:translate-y-[1px] ${
                 reason === r.value
-                  ? 'bg-navy-900 text-cream-50'
-                  : 'bg-cream-50 text-navy-700 hover:bg-cream-100'
+                  ? 'bg-[#C5F030] shadow-[4px_5px_0_#1B1250] text-[#1B1250]'
+                  : 'bg-[#F6FBD4] shadow-[2px_2px_0_#1B1250] text-[#1B1250] hover:bg-[#C5F030]/30'
               }`}
             >
-              <span className="text-lg">{r.emoji}</span>
-              <span className="text-sm font-medium">{r.label}</span>
+              <span>{r.emoji}</span>
+              <span>{r.label}</span>
             </button>
           ))}
         </div>
 
         {reason && (
           <div className="mb-5">
-            <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">
+            <label className="block text-xs font-black text-[#9A63E6] uppercase tracking-wider mb-2">
               Additional details (optional)
             </label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
-              className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 placeholder-navy-300 focus:ring-2 focus:ring-amber-500/30 resize-none"
+              className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none resize-none"
               rows={3}
               placeholder="Add any details that might help..."
               maxLength={1000}
@@ -117,14 +147,16 @@ export default function ReportModal({ targetType, targetId, onClose }: ReportMod
         )}
 
         <div className="flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 py-3 text-navy-500 border border-navy-100/30 rounded-2xl font-medium hover:bg-navy-50 transition-colors">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 bg-[#F6FBD4] text-[#1B1250] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] rounded-full font-black uppercase text-sm transition-all active:translate-y-[2px] active:shadow-none"
+          >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={!reason || submitting}
-            className="flex-1 py-3 bg-red-500 text-white rounded-2xl font-medium hover:bg-red-600 disabled:opacity-50 transition-all btn-press"
+            className="flex-1 py-3 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] rounded-full font-display font-black uppercase text-sm disabled:opacity-50 transition-all active:translate-y-[2px] active:shadow-none"
           >
             {submitting ? 'Submitting...' : 'Submit Report'}
           </button>

@@ -1,25 +1,26 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { parsePlanPost, participantRatio, PlanDetails } from '../lib/plan';
 import api from '../lib/api';
 import { SocialPost, Comment } from '../types';
-import { Heart, MessageCircle, Bookmark, Share2, Plus, X, MapPin, Send, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark, Share2, Plus, X, MapPin, Send, Trash2, Calendar, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { ErrorState, FeedSkeleton } from '../components/ui/FeedbackStates';
 import { CreatePlanModal } from '../components/plans/CreatePlanModal';
 import { ImagePicker } from '../components/ui/ImagePicker';
 import { useKeyboardInset } from '../hooks/useKeyboardInset';
+import { getSocket } from '../lib/socket';
 
 const CATEGORIES = ['general', 'rent', 'buddy', 'college', 'event', 'question', 'discussion'];
-const CATEGORY_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
-  general: { label: 'General', emoji: '💬', color: 'bg-navy-100 text-navy-600' },
-  rent: { label: 'Rent', emoji: '📦', color: 'bg-amber-500/10 text-amber-600' },
-  buddy: { label: 'Buddy', emoji: '👥', color: 'bg-sage-500/10 text-sage-600' },
-  college: { label: 'College', emoji: '🎓', color: 'bg-navy-100 text-navy-600' },
-  event: { label: 'Event', emoji: '🎉', color: 'bg-coral-500/10 text-coral-500' },
-  question: { label: 'Question', emoji: '❓', color: 'bg-amber-500/10 text-amber-600' },
-  discussion: { label: 'Discussion', emoji: '💭', color: 'bg-navy-100 text-navy-600' },
+const CATEGORY_STYLES: Record<string, { label: string; emoji: string; bg: string; text: string }> = {
+  general: { label: 'General', emoji: '💬', bg: 'bg-[#2FA3B5]', text: 'text-white' },
+  rent: { label: 'Rent', emoji: '📦', bg: 'bg-[#E8622B]', text: 'text-white' },
+  buddy: { label: 'Buddy', emoji: '👥', bg: 'bg-[#C5F030]', text: 'text-[#1B1250]' },
+  college: { label: 'College', emoji: '🎓', bg: 'bg-[#9A63E6]', text: 'text-white' },
+  event: { label: 'Event', emoji: '🎉', bg: 'bg-[#FFD41F]', text: 'text-[#1B1250]' },
+  question: { label: 'Question', emoji: '❓', bg: 'bg-[#FF9A1F]', text: 'text-[#1B1250]' },
+  discussion: { label: 'Discussion', emoji: '💭', bg: 'bg-[#B79BF0]', text: 'text-[#1B1250]' },
 };
 
 export default function HomePage() {
@@ -71,6 +72,22 @@ export default function HomePage() {
     setPage(1);
   }, [fetchPosts]);
 
+  // Real-time: prepend new posts from other users without a reload
+  const filterRef = useRef(filter);
+  useEffect(() => { filterRef.current = filter; }, [filter]);
+  useEffect(() => {
+    let socket: ReturnType<typeof getSocket> | null = null;
+    try { socket = getSocket(); } catch { /* not signed in */ }
+    if (!socket) return;
+    const onPost = (post: SocialPost) => {
+      const activeFilter = filterRef.current;
+      if (activeFilter && post.category !== activeFilter) return;
+      setPosts(prev => prev.some(p => p.id === post.id) ? prev : [post, ...prev]);
+    };
+    socket.on('feed_post', onPost);
+    return () => { socket?.off('feed_post', onPost); };
+  }, []);
+
   // Lock body scroll when create modal is open
   useEffect(() => {
     if (showCreate) {
@@ -79,6 +96,7 @@ export default function HomePage() {
     }
     document.body.style.overflow = '';
   }, [showCreate]);
+
   // Lock body scroll when plan modal is open
   useEffect(() => {
     if (showLinkup) {
@@ -101,7 +119,7 @@ export default function HomePage() {
       setNewPost({ category: 'general', content: '', imageUrls: [] });
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { error?: string } } };
-      setCreateError(apiErr.response?.data?.error || 'Couldn\'t create your post. Please try again.');
+      setCreateError(apiErr.response?.data?.error || "Couldn't create your post. Please try again.");
     }
     setSubmitting(false);
   };
@@ -173,7 +191,6 @@ export default function HomePage() {
       return;
     }
     setExpandedComments(postId);
-    // Load comments if not already loaded
     if (!commentsData[postId]) {
       setLoadingComments(prev => ({ ...prev, [postId]: true }));
       try {
@@ -213,7 +230,6 @@ export default function HomePage() {
         }));
       }
       setCommentText(prev => ({ ...prev, [postId]: '' }));
-      // Update comment count in post list
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments_count: p.comments_count + 1 } : p));
     } catch {
       // silent
@@ -234,25 +250,22 @@ export default function HomePage() {
     }
   };
 
-  // Delete post function
   const deletePost = async (postId: string) => {
     setDeletingPost(postId);
     setDeleteError(null);
     try {
       await api.delete(`/feed/${postId}`);
-      // Remove from list optimistically
       setPosts(prev => prev.filter(p => p.id !== postId));
       setPostToDelete(null);
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { error?: string } } };
       const msg = apiErr.response?.data?.error || 'Failed to delete post';
       setDeleteError(msg);
-      // If 403 or other error, keep the post in the list
     }
     setDeletingPost(null);
   };
 
-  // Inline comment panel rendered below a post card
+  // Inline comment panel styled as a sticker compartment
   const renderCommentPanel = (post: SocialPost) => {
     if (expandedComments !== post.id) return null;
     const comments = commentsData[post.id] || [];
@@ -261,47 +274,51 @@ export default function HomePage() {
     const text = commentText[post.id] || '';
 
     return (
-      <div key={`${post.id}-comments`} className="bg-white border-t border-navy-100/30 px-5 py-4 animate-fade-in">
+      <div key={`${post.id}-comments`} className="bg-white/80 border-t-3 border-[#1B1250] px-5 py-4 animate-pop-in">
         {/* Comment list */}
         {isLoading ? (
           <div className="flex items-center justify-center py-4">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-amber-500" />
+            <div className="animate-spin rounded-full h-5 w-5 border-b-3 border-[#1B1250]" />
           </div>
         ) : comments.length === 0 ? (
-          <p className="text-sm text-navy-300 text-center py-3">No comments yet. Be the first to say something.</p>
-        ) : (          <div className="space-y-3 mb-4">
+          <p className="text-xs font-bold text-[#1B1250]/60 text-center py-3">No comments yet. Be the first to say something.</p>
+        ) : (
+          <div className="space-y-3 mb-4">
             {comments.map((comment) => (
               <div key={comment.id} className="flex items-start gap-2.5">
-                <Link to={`/profile/${comment.author_id}`} className="block">
-                  <div className="w-7 h-7 bg-navy-100 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-navy-200 transition-colors">
-                    <span className="text-navy-600 text-[10px] font-medium">{comment.author_name?.charAt(0) || '?'}</span>
+                <Link to={`/profile/${comment.author_id}`} className="block shrink-0">
+                  <div className="w-8 h-8 bg-[#9A63E6]/20 border-2 border-[#1B1250] rounded-full flex items-center justify-center shadow-[1px_1px_0_#1B1250]">
+                    <span className="text-[#1B1250] text-[11px] font-black">{comment.author_name?.charAt(0)?.toUpperCase() || '?'}</span>
                   </div>
                 </Link>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">                    <Link to={`/profile/${comment.author_id}`} className="text-xs font-semibold text-navy-700 hover:text-navy-900 transition-colors">
+                <div className="flex-1 min-w-0 bg-[#F6FBD4] border-2 border-[#1B1250] rounded-[16px] p-2.5 shadow-[2px_2px_0_#1B1250]">
+                  <div className="flex items-center gap-2">
+                    <Link to={`/profile/${comment.author_id}`} className="text-xs font-black text-[#1B1250] hover:text-[#9A63E6] transition-colors truncate">
                       {comment.author_name ?? ''}
                     </Link>
-                    <span className="text-[10px] text-navy-300">{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
+                    <span className="text-[10px] font-bold text-[#1B1250]/50">
+                      {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                    </span>
                     {user?.id === comment.user_id && (
                       <button
                         onClick={() => deleteComment(post.id, comment.id)}
-                        className="text-navy-300 hover:text-red-500 transition-colors"
+                        className="text-[#1B1250]/40 hover:text-[#E8622B] transition-colors ml-auto"
                         aria-label="Delete comment"
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={12} strokeWidth={2.5} />
                       </button>
                     )}
-                      {user && comment.author_id && comment.author_id !== user.id && (
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/profile/${comment.author_id}`)}
-                          className="text-amber-600 hover:text-amber-700 text-[10px] font-medium"
-                        >
-                          View profile
-                        </button>
-                      )}
+                    {user && comment.author_id && comment.author_id !== user.id && (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/profile/${comment.author_id}`)}
+                        className="text-[#9A63E6] hover:underline text-[10px] font-black ml-auto"
+                      >
+                        View profile
+                      </button>
+                    )}
                   </div>
-                  <p className="text-sm text-navy-800 mt-0.5 break-words">{comment.content}</p>
+                  <p className="text-xs font-semibold text-[#1B1250] mt-1 break-words">{comment.content}</p>
                 </div>
               </div>
             ))}
@@ -309,9 +326,9 @@ export default function HomePage() {
         )}
 
         {/* Comment input */}
-        <div className="flex items-center gap-2 pt-2 border-t border-navy-100/30">
-          <div className="w-7 h-7 bg-navy-900 rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="text-cream-50 text-[10px] font-medium">{user?.name?.charAt(0) || '?'}</span>
+        <div className="flex items-center gap-2 pt-2 border-t-2 border-[#1B1250]/20">
+          <div className="w-8 h-8 bg-[#1B1250] rounded-full flex items-center justify-center shrink-0 border-2 border-[#1B1250] shadow-[1px_1px_0_#1B1250]">
+            <span className="text-[#F6FBD4] text-[11px] font-black">{user?.name?.charAt(0)?.toUpperCase() || '?'}</span>
           </div>
           <input
             type="text"
@@ -319,30 +336,29 @@ export default function HomePage() {
             onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitComment(post.id); } }}
             placeholder="Write a comment..."
-            className="flex-1 text-sm px-3 py-2 bg-cream-50 rounded-full border border-navy-100/30 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 text-navy-800 placeholder-navy-300 outline-none"
+            className="flex-1 text-xs font-bold px-3.5 py-2 bg-[#F6FBD4] rounded-full border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] focus:shadow-[3px_3px_0_#1B1250] focus:bg-white text-[#1B1250] placeholder:text-[#1B1250]/40 outline-none transition-all"
           />
           <button
             onClick={() => submitComment(post.id)}
             disabled={!text.trim() || isSubmitting}
-            className="p-2 text-amber-500 hover:text-amber-600 disabled:text-navy-200 transition-colors"
+            className="w-8 h-8 rounded-full bg-[#C5F030] hover:bg-[#bcf01a] border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] disabled:opacity-50 flex items-center justify-center text-[#1B1250] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all shrink-0"
             aria-label="Send comment"
           >
-            <Send size={16} />
+            <Send size={14} strokeWidth={2.5} />
           </button>
         </div>
       </div>
     );
   };
 
-  // Render different card styles based on post category
+  // Render post content: title, description, details pills, and images
   const renderPostBody = (post: SocialPost, plan: PlanDetails | null) => {
-    // Participant rows are rendered as a small live counter elsewhere on the card
     const visibleDetails = plan
       ? plan.details.filter(d => !/max\s+\d+\s+participants?/i.test(d.label))
       : [];
     const images = post.image_urls || [];
     const imageGrid = images.length > 0 && (
-      <div className={`grid gap-1.5 mb-4 rounded-2xl overflow-hidden ${
+      <div className={`grid gap-2 mb-3.5 rounded-[18px] overflow-hidden border-2.5 border-[#1B1250] shadow-[3px_3px_0_#1B1250] ${
         images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
       }`}>
         {images.map((url, i) => (
@@ -351,44 +367,63 @@ export default function HomePage() {
             src={url}
             alt={`Post image ${i + 1}`}
             loading="lazy"
-            className={`w-full object-cover ${images.length === 1 ? 'max-h-96' : 'h-40'} ${
+            className={`w-full object-cover bg-white ${images.length === 1 ? 'max-h-80' : 'h-36'} ${
               images.length === 3 && i === 0 ? 'row-span-2 h-full' : ''
             }`}
           />
         ))}
       </div>
     );
+
     if (!plan) {
       return (
         <>
-          <p className="font-display text-display-md text-navy-900 leading-tight whitespace-pre-wrap mb-4">
+          <p className="font-display font-black text-lg text-[#1B1250] leading-snug whitespace-pre-wrap mb-3.5">
             {post.content}
           </p>
           {imageGrid}
         </>
       );
     }
+
     return (
       <>
-        <h2 className="font-display text-display-md text-navy-900 leading-tight mb-3">
+        <h2 className="font-display font-black text-xl text-[#1B1250] leading-tight mb-2">
           {plan.title}
         </h2>
         {plan.description && (
-          <p className="text-navy-800 whitespace-pre-wrap leading-relaxed mb-4">
+          <p className="text-xs sm:text-sm font-semibold text-[#1B1250]/90 whitespace-pre-wrap leading-relaxed mb-3">
             {plan.description}
           </p>
         )}
         {visibleDetails.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {visibleDetails.map((d) => (
-              <span
-                key={`${d.icon}-${d.label}`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cream-100 text-navy-600 text-sm font-medium"
-              >
-                <span aria-hidden="true">{d.icon}</span>
-                <span>{d.label}</span>
-              </span>
-            ))}
+          <div className="flex flex-wrap gap-2 mb-3.5">
+            {visibleDetails.map((d) => {
+              // Check if detail is date/time related -> Yellow pill with calendar icon
+              const isDateOrTime = /date|time|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|am|pm|\d{1,2}:\d{2}|today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday/i.test(d.label);
+
+              if (isDateOrTime) {
+                return (
+                  <span
+                    key={`${d.icon}-${d.label}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFD41F] text-[#1B1250] border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] text-xs font-black"
+                  >
+                    <Calendar size={13} strokeWidth={2.5} className="shrink-0" />
+                    <span>{d.label}</span>
+                  </span>
+                );
+              }
+
+              return (
+                <span
+                  key={`${d.icon}-${d.label}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-[#1B1250] border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] text-xs font-black"
+                >
+                  <span aria-hidden="true">{d.icon}</span>
+                  <span>{d.label}</span>
+                </span>
+              );
+            })}
           </div>
         )}
         {imageGrid}
@@ -396,324 +431,275 @@ export default function HomePage() {
     );
   };
 
+  // Render a Neo-Brutalist Sticker Card (alternately rotated -1° / +1°)
   const renderPostCard = (post: SocialPost, index: number) => {
     const plan = parsePlanPost(post);
     const planRatio = participantRatio(post);
-    // Tapping a Linkup plan card opens its detail page. Ignore clicks on any
-    // interactive element inside the card (like, comment, profile link, ...).
+
     const openPlan = (e: React.MouseEvent) => {
       if (!plan) return;
       if ((e.target as HTMLElement).closest('button, a')) return;
       navigate(`/linkup/${post.id}`);
     };
-    // Small "3/4" occupancy counter, bottom-left of the card
-    const planBadge = plan && planRatio ? (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-navy-900 text-cream-50 text-[11px] font-semibold tabular-nums flex-shrink-0">
-        <span aria-hidden="true">👥</span> {planRatio}
-      </span>
-    ) : null;
-    // A plan is an ordinary feed post, so it keeps its real category chip
-    // (General for linkups) instead of a separate "Linkup" label. The card body
-    // still renders it as a structured plan.
-    const cat = CATEGORY_LABELS[post.category] || CATEGORY_LABELS.general;
-    const isLarge = index % 5 === 0;
-    const isCompact = index % 3 === 1;
+
+    // Category style
+    const cat = CATEGORY_STYLES[post.category] || CATEGORY_STYLES.general;
     const authorDisplayName = post.author_name || (user?.id === post.user_id ? user?.name : '') || 'Anonymous';
     const authorInitial = (authorDisplayName || '?').charAt(0).toUpperCase();
 
-    const commentBtn = (
-      <button onClick={() => toggleComments(post.id)} className={`flex items-center gap-1.5 text-sm transition-colors ${expandedComments === post.id ? 'text-navy-700' : 'text-navy-400 hover:text-navy-600'}`}>
-        <MessageCircle size={18} />
-        <span>{post.comments_count}</span>
-      </button>
-    );
+    // Alternate rotation: -1° on even cards, +1° on odd cards
+    const rotationStyle = index % 2 === 0 ? '-rotate-1 hover:rotate-0' : 'rotate-1 hover:rotate-0';
 
-    // Large hero card
-    if (isLarge && post.content.length > 50) {
-      return (
-        <div key={post.id} className="animate-fade-in">
-          <div className={`bg-white rounded-3xl shadow-soft overflow-hidden ${plan ? 'cursor-pointer' : ''}`} onClick={openPlan}>
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-navy-900 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+    // Colored avatar ring cycle
+    const ringColors = ['ring-[#E8622B]', 'ring-[#2FA3B5]', 'ring-[#9A63E6]', 'ring-[#C5F030]'];
+    const avatarRing = ringColors[index % ringColors.length];
+
+    return (
+      <div key={post.id} className="transition-transform duration-200 ease-out">
+        {/* Main Sticker Card */}
+        <div
+          className={`bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] overflow-hidden transition-all duration-200 ${rotationStyle} ${
+            plan ? 'cursor-pointer hover:shadow-[7px_10px_0_#1B1250]' : ''
+          }`}
+          onClick={openPlan}
+        >
+          <div className="p-5 sm:p-6">
+            {/* Header: Author + Timestamp + Category Tag Badge on Top Right */}
+            <div className="flex items-start justify-between gap-3 mb-3.5">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Circular Avatar with Colored Ring and Navy Outline */}
+                <div className={`w-10 h-10 rounded-full bg-[#1B1250] border-2.5 border-[#1B1250] ring-3 ${avatarRing} shadow-[2px_2px_0_#1B1250] flex items-center justify-center shrink-0 overflow-hidden`}>
                   {post.author_avatar ? (
                     <img src={post.author_avatar} alt={authorDisplayName} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-cream-50 font-medium text-sm">{authorInitial}</span>
+                    <span className="text-[#F6FBD4] font-black text-sm">{authorInitial}</span>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Link to={`/profile/${post.author_id || post.user_id}`} className="font-semibold text-navy-900 text-sm hover:text-navy-700 transition-colors truncate">
-                        {authorDisplayName}
-                      </Link>
-                      <span className="text-xs text-navy-300">·</span>
-                      <span className="text-xs text-navy-400 whitespace-nowrap">
-                        {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                      </span>
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ${cat.color}`}>
-                      {cat.emoji} {cat.label}
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Link
+                      to={`/profile/${post.author_id || post.user_id}`}
+                      className="font-black text-[#1B1250] text-sm hover:text-[#9A63E6] transition-colors truncate"
+                    >
+                      {authorDisplayName}
+                    </Link>
+                    <span className="text-xs font-bold text-[#1B1250]/40">·</span>
+                    <span className="text-xs font-bold text-[#1B1250]/60 whitespace-nowrap">
+                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                     </span>
                   </div>
                   {post.author_city && (
-                    <div className="flex items-center gap-1.5 text-xs text-navy-400 mt-0.5">
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-[#1B1250]/70 mt-0.5">
+                      <MapPin size={11} className="text-[#E8622B] shrink-0 fill-[#E8622B]" />
                       <span>{post.author_city}</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              {renderPostBody(post, plan)}
-
-              {post.location_name && (
-                <div className="flex items-center gap-1.5 text-sm text-navy-400 mb-4">
-                  <MapPin size={14} />
-                  <span>{post.location_name}</span>
-                </div>
-              )}
-
-              <div className="flex items-center gap-4 pt-4 border-t border-navy-100/30">
-                {planBadge}
-                <button
-                  onClick={() => toggleLike(post.id)}
-                  disabled={likingPosts[post.id]}
-                  className={`flex items-center gap-1.5 text-sm transition-colors ${post.isLiked ? 'text-coral-500' : 'text-navy-400 hover:text-coral-500'}`}
-                >
-                  <Heart size={18} fill={post.isLiked ? 'currentColor' : 'none'} />
-                  <span>{Math.max(0, post.likes_count ?? 0)}</span>
-                </button>
-                {commentBtn}
-                <button onClick={() => toggleSave(post.id)}
-                  className={`flex items-center gap-1.5 text-sm transition-colors ${post.isSaved ? 'text-amber-500' : 'text-navy-400 hover:text-amber-500'}`}>
-                  <Bookmark size={18} fill={post.isSaved ? 'currentColor' : 'none'} />
-                </button>
-                <button onClick={() => sharePost(post.id)} className="ml-auto text-navy-400 hover:text-navy-600 transition-colors">
-                  <Share2 size={16} />
-                </button>
-                {user?.id === post.user_id && (
-                  <button
-                    onClick={() => setPostToDelete(post.id)}
-                    disabled={deletingPost === post.id}
-                    className="text-navy-300 hover:text-red-500 transition-colors ml-2"
-                    aria-label="Delete post"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-
-            </div>
-          </div>
-          {renderCommentPanel(post)}
-        </div>
-      );
-    }
-
-    // Compact text card
-    if (isCompact) {
-      return (
-        <div key={post.id} className="animate-fade-in">
-          <div className={`bg-white rounded-3xl shadow-soft p-6 ${plan ? 'cursor-pointer' : ''}`} onClick={openPlan}>
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-navy-900 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                {post.author_avatar ? (
-                  <img src={post.author_avatar} alt={authorDisplayName} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-cream-50 font-medium text-sm">{authorInitial}</span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Link to={`/profile/${post.author_id || post.user_id}`} className="font-semibold text-navy-900 text-sm hover:text-navy-700 transition-colors truncate">
-                      {authorDisplayName}
-                    </Link>
-                    <span className="text-xs text-navy-300">·</span>
-                    <span className="text-xs text-navy-400 whitespace-nowrap">
-                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium flex-shrink-0 ${cat.color}`}>
-                    {cat.emoji} {cat.label}
-                  </span>
-                </div>
-                {renderPostBody(post, plan)}
-                <div className="flex items-center gap-4 mt-3 text-sm text-navy-400">
-                  {planBadge}
-                  <button
-                    onClick={() => toggleLike(post.id)}
-                    disabled={likingPosts[post.id]}
-                    className={`flex items-center gap-1.5 transition-colors ${post.isLiked ? 'text-coral-500' : 'hover:text-coral-500'}`}
-                  >
-                    <Heart size={18} fill={post.isLiked ? 'currentColor' : 'none'} />
-                    <span>{Math.max(0, post.likes_count ?? 0)}</span>
-                  </button>
-                  <button onClick={() => toggleComments(post.id)} className={`flex items-center gap-1.5 transition-colors ${expandedComments === post.id ? 'text-navy-700' : 'text-navy-400 hover:text-navy-600'}`}>
-                    <MessageCircle size={18} />
-                    <span>{post.comments_count}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          {renderCommentPanel(post)}
-        </div>
-      );
-    }
-
-    // Default card
-    return (
-      <div key={post.id} className="animate-fade-in">
-        <div className={`bg-white rounded-3xl shadow-soft overflow-hidden ${plan ? 'cursor-pointer' : ''}`} onClick={openPlan}>
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-navy-900 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                {post.author_avatar ? (
-                  <img src={post.author_avatar} alt={authorDisplayName} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-cream-50 font-medium text-sm">{authorInitial}</span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Link to={`/profile/${post.author_id || post.user_id}`} className="font-semibold text-navy-900 text-sm hover:text-navy-700 transition-colors truncate">
-                      {authorDisplayName}
-                    </Link>
-                    <span className="text-xs text-navy-300">·</span>
-                    <span className="text-xs text-navy-400 whitespace-nowrap">
-                      {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ${cat.color}`}>
-                    {cat.emoji} {cat.label}
-                  </span>
-                </div>
-                {post.author_city && (
-                  <div className="flex items-center gap-1.5 text-xs text-navy-400 mt-0.5">
-                    <span>{post.author_city}</span>
-                  </div>
-                )}
+              {/* Category Tag as a Colored Badge on Top-Right Corner */}
+              <div
+                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] text-xs font-black uppercase tracking-wider shrink-0 ${cat.bg} ${cat.text}`}
+              >
+                <span>{cat.emoji}</span>
+                <span>{cat.label}</span>
               </div>
             </div>
 
+            {/* Post Content Body */}
             {renderPostBody(post, plan)}
 
+            {/* Location Tag */}
             {post.location_name && (
-              <div className="flex items-center gap-1.5 text-sm text-navy-400 mb-4">
-                <MapPin size={14} />
+              <div className="inline-flex items-center gap-1.5 bg-white border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] rounded-full px-3 py-1 text-xs font-bold text-[#1B1250] mb-3">
+                <MapPin size={13} className="text-[#E8622B] shrink-0" />
                 <span>{post.location_name}</span>
               </div>
             )}
           </div>
 
-          <div className="px-5 py-3 border-t border-navy-100/20 flex items-center gap-5">
-            {planBadge}
-            <button
-              onClick={() => toggleLike(post.id)}
-              disabled={likingPosts[post.id]}
-              className={`flex items-center gap-1.5 text-sm transition-colors ${post.isLiked ? 'text-coral-500' : 'text-navy-400 hover:text-coral-500'}`}
-            >
-              <Heart size={18} fill={post.isLiked ? 'currentColor' : 'none'} />
-              <span>{Math.max(0, post.likes_count ?? 0)}</span>
-            </button>
-            {commentBtn}
-            <button onClick={() => toggleSave(post.id)}
-              className={`transition-colors ${post.isSaved ? 'text-amber-500' : 'text-navy-400 hover:text-amber-500'}`}>
-              <Bookmark size={18} fill={post.isSaved ? 'currentColor' : 'none'} />
-            </button>
-            <button onClick={() => sharePost(post.id)} className="ml-auto text-navy-400 hover:text-navy-600 transition-colors">
-              <Share2 size={16} />
-            </button>
-            {user?.id === post.user_id && (
+          {/* Action Row: Participants Pill (Lime) + Chunky Outline Icons */}
+          <div className="px-5 py-3 bg-[#F6FBD4] border-t-3 border-[#1B1250] flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Participants Counter: Lime Pill */}
+              {plan && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C5F030] text-[#1B1250] border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] text-xs font-black tabular-nums shrink-0">
+                  <Users size={14} strokeWidth={2.5} className="shrink-0" />
+                  <span>{planRatio || '0/5'}</span>
+                </span>
+              )}
+
+              {/* Like Button (Chunky Outline with Bounce Physics) */}
               <button
-                onClick={() => setPostToDelete(post.id)}
-                disabled={deletingPost === post.id}
-                className="text-navy-300 hover:text-red-500 transition-colors"
-                aria-label="Delete post"
+                type="button"
+                onClick={() => toggleLike(post.id)}
+                disabled={likingPosts[post.id]}
+                className={`flex items-center gap-1.5 text-xs font-black text-[#1B1250] transition-transform duration-150 active:scale-75 hover:scale-110 active:translate-y-0.5 select-none ${
+                  post.isLiked ? 'text-[#E8622B]' : 'hover:text-[#E8622B]'
+                }`}
+                aria-label="Like post"
               >
-                <Trash2 size={16} />
+                <Heart
+                  size={20}
+                  strokeWidth={2.5}
+                  className={`transition-colors ${post.isLiked ? 'fill-[#E8622B] text-[#E8622B]' : 'text-[#1B1250]'}`}
+                />
+                <span className="tabular-nums">{Math.max(0, post.likes_count ?? 0)}</span>
               </button>
-            )}
+
+              {/* Comment Button (Chunky Outline with Bounce Physics) */}
+              <button
+                type="button"
+                onClick={() => toggleComments(post.id)}
+                className={`flex items-center gap-1.5 text-xs font-black text-[#1B1250] transition-transform duration-150 active:scale-75 hover:scale-110 active:translate-y-0.5 select-none ${
+                  expandedComments === post.id ? 'text-[#9A63E6]' : 'hover:text-[#9A63E6]'
+                }`}
+                aria-label="Toggle comments"
+              >
+                <MessageCircle size={20} strokeWidth={2.5} className="text-[#1B1250]" />
+                <span className="tabular-nums">{post.comments_count}</span>
+              </button>
+
+              {/* Bookmark Button (Chunky Outline with Bounce Physics) */}
+              <button
+                type="button"
+                onClick={() => toggleSave(post.id)}
+                className="transition-transform duration-150 active:scale-75 hover:scale-110 active:translate-y-0.5 select-none text-[#1B1250]"
+                aria-label="Bookmark post"
+              >
+                <Bookmark
+                  size={20}
+                  strokeWidth={2.5}
+                  className={post.isSaved ? 'fill-[#FFD41F] text-[#1B1250]' : 'text-[#1B1250]'}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Share Button (Chunky Outline with Bounce Physics) */}
+              <button
+                type="button"
+                onClick={() => sharePost(post.id)}
+                className="transition-transform duration-150 active:scale-75 hover:scale-110 active:translate-y-0.5 select-none text-[#1B1250]"
+                aria-label="Share post"
+              >
+                <Share2 size={18} strokeWidth={2.5} />
+              </button>
+
+              {/* Delete Button (If owned by current user) */}
+              {user?.id === post.user_id && (
+                <button
+                  type="button"
+                  onClick={() => setPostToDelete(post.id)}
+                  disabled={deletingPost === post.id}
+                  className="w-7 h-7 rounded-full bg-white hover:bg-[#E8622B] text-[#1B1250] hover:text-white border-2 border-[#1B1250] shadow-[1px_1px_0_#1B1250] flex items-center justify-center transition-all duration-150 active:scale-75"
+                  aria-label="Delete post"
+                >
+                  <Trash2 size={13} strokeWidth={2.5} />
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Comment Drawer if expanded */}
+          {renderCommentPanel(post)}
         </div>
-        {renderCommentPanel(post)}
       </div>
     );
   };
 
   return (
-    <div className="max-w-lg mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="font-display text-display-lg text-navy-900">
-          What's happening
-          <br />nearby?
+    <div className="w-full relative pb-10">
+      {/* Neo-Brutalist Heading with Yellow Highlight on "nearby" */}
+      <div className="mb-5 pt-1">
+        <h1 className="font-display font-black text-3xl sm:text-4xl text-[#1B1250] tracking-tight leading-[1.08]">
+          What's happening <br />
+          <span className="inline-block bg-[#FFD41F] border-2.5 border-[#1B1250] shadow-[3px_3px_0_#1B1250] px-3 py-0.5 rounded-[10px] -rotate-1 mt-1 text-[#1B1250]">
+            nearby?
+          </span>
         </h1>
       </div>
 
-      {/* Category filters */}
-      <div className="flex gap-2 mb-6 overflow-x-auto activity-scroll pb-1 -mx-4 px-4">
-
-        <button onClick={() => setFilter('')}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 btn-press ${
-            !filter ? 'bg-navy-900 text-cream-50' : 'bg-white text-navy-500 hover:bg-navy-50 shadow-soft'
-          }`}>
+      {/* Category Chips: Pill, Cream, 3px Navy Border, Selected = Lime */}
+      <div className="flex items-center gap-2.5 mb-6 overflow-x-auto no-scrollbar py-2 px-1 -mx-2 scroll-smooth">
+        <button
+          type="button"
+          onClick={() => setFilter('')}
+          className={`px-4 py-2 rounded-full text-xs font-black whitespace-nowrap border-3 border-[#1B1250] transition-all duration-150 select-none ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            !filter
+              ? 'bg-[#C5F030] text-[#1B1250] shadow-[3px_4px_0_#1B1250] scale-[1.02]'
+              : 'bg-[#F6FBD4] text-[#1B1250] shadow-[2px_3px_0_#1B1250] hover:bg-white active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#1B1250]'
+          }`}
+        >
           All
         </button>
         {CATEGORIES.map(cat => (
-          <button key={cat} onClick={() => setFilter(cat)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 btn-press ${
-              filter === cat ? 'bg-navy-900 text-cream-50' : 'bg-white text-navy-500 hover:bg-navy-50 shadow-soft'
-            }`}>
-            {CATEGORY_LABELS[cat].emoji} {CATEGORY_LABELS[cat].label}
+          <button
+            key={cat}
+            type="button"
+            onClick={() => setFilter(cat)}
+            className={`px-4 py-2 rounded-full text-xs font-black whitespace-nowrap border-3 border-[#1B1250] transition-all duration-150 select-none ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+              filter === cat
+                ? 'bg-[#C5F030] text-[#1B1250] shadow-[3px_4px_0_#1B1250] scale-[1.02]'
+                : 'bg-[#F6FBD4] text-[#1B1250] shadow-[2px_3px_0_#1B1250] hover:bg-white active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#1B1250]'
+            }`}
+          >
+            {CATEGORY_STYLES[cat].emoji} {CATEGORY_STYLES[cat].label}
           </button>
         ))}
       </div>
 
-      {/* Create post modal */}
+      {/* Create Post Modal (Neo-Brutalist Sticker Dialog) */}
       {showCreate && (
         <div
-          className="fixed inset-0 bg-cream-50/95 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          className="fixed inset-0 bg-[#1B1250]/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 animate-pop-in"
           style={{ paddingBottom: keyboardInset }}
         >
-          <div className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl shadow-lifted p-6 animate-slide-up max-h-[min(90dvh,100%)] sm:max-h-[min(85vh,100%)] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
-              <h2 className="font-display text-display-sm text-navy-900">Create Post</h2>
-              <button onClick={() => setShowCreate(false)} className="p-2 hover:bg-navy-50 rounded-xl transition-colors" aria-label="Close">
-                <X size={20} className="text-navy-400" />
+          <div className="bg-[#F6FBD4] border-3 border-[#1B1250] shadow-[8px_10px_0_#1B1250] w-full sm:max-w-md rounded-[26px] p-6 max-h-[min(90dvh,100%)] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between mb-4 shrink-0">
+              <h2 className="font-display font-black text-2xl text-[#1B1250] tracking-tight">Create Post</h2>
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                className="w-8 h-8 rounded-full bg-[#C5F030] hover:bg-[#FFD41F] border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] flex items-center justify-center text-[#1B1250] transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                aria-label="Close"
+              >
+                <X size={16} strokeWidth={3} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-0 -mx-2 px-2">
-              <div className="mb-5">
-                <label className="block text-xs font-semibold text-navy-500 tracking-wider uppercase mb-3">Category</label>
+            <div className="flex-1 overflow-y-auto min-h-0 pr-1 no-scrollbar">
+              <div className="mb-4">
+                <label className="block text-xs font-black text-[#1B1250] uppercase tracking-wider mb-2">Category</label>
                 <div className="flex flex-wrap gap-2">
                   {CATEGORIES.map(cat => (
-                    <button key={cat} onClick={() => setNewPost({ ...newPost, category: cat })}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 btn-press ${
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setNewPost({ ...newPost, category: cat })}
+                      className={`px-3 py-1.5 rounded-full text-xs font-black border-2.5 border-[#1B1250] transition-all ${
                         newPost.category === cat
-                          ? 'bg-navy-900 text-cream-50'
-                          : 'bg-cream-100 text-navy-500 hover:bg-cream-200'
-                      }`}>
-                      {CATEGORY_LABELS[cat].emoji} {CATEGORY_LABELS[cat].label}
+                          ? 'bg-[#C5F030] text-[#1B1250] shadow-[2px_3px_0_#1B1250]'
+                          : 'bg-white text-[#1B1250] shadow-[1px_2px_0_#1B1250]'
+                      }`}
+                    >
+                      {CATEGORY_STYLES[cat].emoji} {CATEGORY_STYLES[cat].label}
                     </button>
                   ))}
                 </div>
               </div>
 
               {createError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-                  {createError}
+                <div className="mb-4 p-3 bg-[#E8622B]/15 border-2.5 border-[#E8622B] rounded-[16px] text-xs font-black text-[#E8622B]">
+                  ⚠️ {createError}
                 </div>
               )}
 
               <textarea
                 value={newPost.content}
                 onChange={e => setNewPost({ ...newPost, content: e.target.value })}
-                className="w-full px-4 py-4 border border-navy-100/30 rounded-2xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 min-h-[140px] resize-none text-navy-800 placeholder-navy-300"
+                className="w-full px-4 py-3.5 bg-white border-3 border-[#1B1250] rounded-[20px] shadow-[3px_4px_0_#1B1250] focus:shadow-[4px_6px_0_#1B1250] focus:outline-none min-h-[120px] resize-none text-[#1B1250] font-bold placeholder:text-[#1B1250]/40 text-sm"
                 placeholder="What's happening in your community?"
               />
 
@@ -725,14 +711,20 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-5 pt-4 border-t border-navy-100/30 flex-shrink-0">
-              <button onClick={() => setShowCreate(false)}
-                className="px-5 py-2.5 text-navy-500 hover:text-navy-700 font-medium transition-colors">
+            <div className="flex justify-end gap-3 mt-5 pt-4 border-t-2 border-[#1B1250]/20 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                className="px-5 py-2.5 text-xs font-black text-[#1B1250] bg-white border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] rounded-full active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+              >
                 Cancel
               </button>
-              <button onClick={createPost}
+              <button
+                type="button"
+                onClick={createPost}
                 disabled={submitting || !newPost.content.trim()}
-                className="px-6 py-2.5 bg-navy-900 text-cream-50 rounded-xl font-medium hover:bg-navy-800 disabled:opacity-50 transition-all duration-200 btn-press">
+                className="px-6 py-2.5 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-[3px_4px_0_#1B1250] rounded-full text-xs font-black hover:bg-[#bcf01a] disabled:opacity-50 active:translate-x-[2px] active:translate-y-[3px] active:shadow-none transition-all"
+              >
                 {submitting ? 'Posting...' : 'Post'}
               </button>
             </div>
@@ -740,7 +732,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Linkup modal — CreatePlanModal renders its own scrim, header and sheet */}
+      {/* Linkup Modal */}
       {showLinkup && (
         <CreatePlanModal
           onClose={() => setShowLinkup(false)}
@@ -751,61 +743,70 @@ export default function HomePage() {
         />
       )}
 
-      {/* Posts feed with varied visual density */}
+      {/* Posts Feed */}
       {loading ? (
         <FeedSkeleton count={3} />
       ) : error ? (
         <ErrorState message={error} onRetry={() => { setLoading(true); fetchPosts(1, false); }} />
       ) : posts.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-16 h-16 bg-cream-200 rounded-3xl flex items-center justify-center mx-auto mb-4">
+        <div className="text-center py-16 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] p-8 -rotate-1">
+          <div className="w-16 h-16 bg-[#C5F030] border-3 border-[#1B1250] shadow-[3px_3px_0_#1B1250] rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">🔍</span>
           </div>
-          <p className="font-display text-display-sm text-navy-800 mb-2">Nothing yet</p>
-          <p className="text-sm text-navy-400">Be the first to share something with your community</p>
+          <p className="font-display font-black text-2xl text-[#1B1250] mb-2">Nothing yet</p>
+          <p className="text-xs font-bold text-[#1B1250]/70">Be the first to share something with your community</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {posts.map((post, index) => renderPostCard(post, index))}
 
           {hasMore && (
-            <button onClick={() => { setPage(page + 1); fetchPosts(page + 1, true); }}
-              className="w-full py-4 text-navy-500 hover:text-navy-700 font-medium text-sm transition-colors">
-              Load more
-            </button>
+            <div className="pt-2 pb-6 flex justify-center">
+              <button
+                type="button"
+                onClick={() => { setPage(page + 1); fetchPosts(page + 1, true); }}
+                className="px-6 py-3 bg-[#F6FBD4] hover:bg-white text-[#1B1250] font-black text-xs uppercase tracking-wider rounded-full border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#1B1250] transition-all"
+              >
+                Load more
+              </button>
+            </div>
           )}
         </div>
       )}
 
-      {/* Delete confirmation modal */}
+      {/* Delete Confirmation Modal */}
       {postToDelete && (
-        <div className="fixed inset-0 bg-cream-50/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full animate-fade-in">
-            <h3 className="font-display text-xl text-navy-900 mb-2">Delete this post?</h3>
-            <p className="text-sm text-navy-500 mb-6">
+        <div className="fixed inset-0 bg-[#1B1250]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-pop-in">
+          <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[8px_10px_0_#1B1250] p-6 max-w-sm w-full">
+            <h3 className="font-display font-black text-2xl text-[#1B1250] mb-2">Delete this post?</h3>
+            <p className="text-xs font-bold text-[#1B1250]/70 mb-5">
               This action cannot be undone. The post will be permanently removed.
             </p>
             {deleteError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-                {deleteError}
+              <div className="mb-4 p-3 bg-[#E8622B]/15 border-2.5 border-[#E8622B] rounded-[16px] text-xs font-black text-[#E8622B]">
+                ⚠️ {deleteError}
               </div>
             )}
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => setPostToDelete(null)}
-                className="flex-1 py-3 text-navy-500 border border-navy-100/30 rounded-xl font-medium hover:bg-navy-50 transition-colors"
+                className="flex-1 py-2.5 text-xs font-black text-[#1B1250] bg-white border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] rounded-full active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => deletePost(postToDelete)}
                 disabled={deletingPost === postToDelete}
-                className="flex-1 py-3 bg-coral-500 text-white rounded-xl font-medium hover:bg-coral-600 disabled:opacity-50 transition-all btn-press flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 bg-[#E8622B] text-white border-2.5 border-[#1B1250] shadow-[2px_3px_0_#1B1250] rounded-full text-xs font-black hover:bg-[#d65420] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center gap-1.5"
               >
                 {deletingPost === postToDelete ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                 ) : (
-                  <><Trash2 size={16} /> Delete</>
+                  <>
+                    <Trash2 size={14} strokeWidth={2.5} /> Delete
+                  </>
                 )}
               </button>
             </div>
@@ -813,23 +814,27 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Floating actions — small Post button bottom right (WhatsApp style), Linkup stacked just above it */}
-      <div className="fixed right-4 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] flex flex-col items-end gap-2 z-40">
+      {/* Floating Action Button: "+ Linkup" (Lime pill with navy 3px outline and hard shadow) + Quick Post */}
+      <div className="fixed right-4 sm:right-[max(1rem,calc((100vw-480px)/2+1rem))] bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] flex flex-col items-end gap-2.5 z-40">
         <button
           type="button"
           onClick={() => setShowLinkup(true)}
-          className="rounded-md bg-navy-900 text-cream-50 px-2.5 py-1 text-[11px] font-semibold tracking-wide shadow-soft hover:bg-navy-800 active:bg-navy-800 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press"
-          aria-label="Open linkup"
+          className="inline-flex items-center gap-2 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-[4px_6px_0_#1B1250] rounded-full px-5 py-3 text-sm font-black tracking-tight select-none transition-all duration-200 hover:rotate-2 hover:animate-wiggle active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0_#1B1250]"
+          aria-label="Create Linkup"
         >
-          Linkup
+          <Plus size={18} strokeWidth={3} className="shrink-0" />
+          <span>+ Linkup</span>
         </button>
+
+        {/* Quick Post button */}
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="w-11 h-11 rounded-full bg-navy-900 text-cream-50 shadow-lifted hover:bg-navy-800 active:bg-navy-800 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none transition-all duration-200 btn-press flex items-center justify-center"
+          className="w-10 h-10 rounded-full bg-[#FFD41F] hover:bg-[#ffe14d] text-[#1B1250] border-2.5 border-[#1B1250] shadow-[3px_3px_0_#1B1250] flex items-center justify-center transition-all duration-150 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#1B1250]"
           aria-label="Create post"
+          title="Create post"
         >
-          <Plus size={18} />
+          <Plus size={18} strokeWidth={3} />
         </button>
       </div>
     </div>

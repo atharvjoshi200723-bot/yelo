@@ -7,9 +7,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { ErrorState, EmptyState, ListSkeleton } from '../components/ui/FeedbackStates';
 
 const STATUS_STYLES: Record<string, string> = {
-  active: 'bg-sage-500/15 text-sage-600',
-  rented: 'bg-navy-100 text-navy-600',
-  inactive: 'bg-cream-200 text-navy-500',
+  active: 'bg-[#3F8A12] text-white border-2 border-[#1B1250] rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase',
+  rented: 'bg-[#FFD41F] text-[#1B1250] border-2 border-[#1B1250] rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase',
+  inactive: 'bg-[#1B1250]/20 text-[#1B1250] border-2 border-[#1B1250]/40 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase',
 };
 
 export default function MyListingsPage() {
@@ -57,115 +57,148 @@ export default function MyListingsPage() {
   if (error) return <ErrorState message={error} onRetry={() => fetchListings()} />;
 
   return (
-    <div className="pb-24">
-      <button onClick={() => navigate('/rent')} className="flex items-center gap-2 py-2.5 -my-1 text-slate-600 hover:text-slate-800 mb-4">
-        <ArrowLeft size={18} /> Rent
-      </button>
-
-      <div className="flex items-start justify-between gap-3 mb-6">
-        <div>
-          <h1 className="font-display text-display-lg text-navy-900">My Listings</h1>
-          <p className="text-sm text-navy-400 mt-1">
-            {listings.length} {listings.length === 1 ? 'item' : 'items'} listed by you
-          </p>
+    <div className="pb-24 px-4" style={{ backgroundColor: '#EAE4FB', minHeight: '100vh' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between pt-6 mb-6">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/rent')}
+            className="w-10 h-10 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo flex items-center justify-center flex-shrink-0 hover:shadow-neo-pressed transition-all"
+          >
+            <ArrowLeft size={18} className="text-[#1B1250]" />
+          </button>
+          <div>
+            <h1 className="font-display font-black text-2xl text-[#1B1250]">My Listings</h1>
+            <p className="text-xs font-black uppercase tracking-wider text-[#1B1250]/60">
+              {listings.length} {listings.length === 1 ? 'item' : 'items'} listed by you
+            </p>
+          </div>
         </div>
         <Link
           to="/rent/create"
-          className="flex items-center gap-2 bg-navy-900 text-cream-50 rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-navy-800 transition-colors btn-press shrink-0"
+          className="flex items-center gap-1.5 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-neo rounded-full px-4 py-2 font-black text-sm uppercase hover:shadow-neo-pressed transition-all"
         >
-          <Plus size={16} /> New
+          <Plus size={15} /> New
         </Link>
       </div>
 
       {listings.length === 0 ? (
-        <EmptyState
-          emoji="📦"
-          title="You have not listed anything yet"
-          description="Items you list for rent will show up here so you can edit or remove them."
-          action={{ label: 'List something', to: '/rent/create' }}
-        />
+        /* Empty state */
+        <div className="flex flex-col items-center py-16 text-center">
+          <div className="w-20 h-20 rounded-[22px] border-3 border-[#1B1250] shadow-neo bg-[#E8622B] flex items-center justify-center mb-5">
+            <span className="text-4xl">📦</span>
+          </div>
+          <p className="font-display font-black text-xl text-[#1B1250] mb-2">No listings yet</p>
+          <p className="text-sm font-bold text-[#1B1250]/60 mb-6">Start renting out your stuff</p>
+          <Link
+            to="/rent/create"
+            className="inline-flex items-center gap-2 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-neo rounded-full px-6 py-2.5 font-black uppercase text-sm hover:shadow-neo-pressed transition-all"
+          >
+            Add your first listing
+          </Link>
+        </div>
       ) : (
-        <div className="space-y-3">
-          {listings.map(listing => (
-            <div key={listing.id} className="bg-white rounded-2xl shadow-soft overflow-hidden">
-              <Link to={`/rent/${listing.id}`} className="flex gap-3 p-3">
-                <div className="w-20 h-20 rounded-xl bg-navy-50 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                  {listing.image_urls && listing.image_urls.length > 0 ? (
-                    <img src={listing.image_urls[0]} alt={listing.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-3xl">📦</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-semibold text-navy-900 text-sm truncate">{listing.title}</h2>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase flex-shrink-0 ${STATUS_STYLES[listing.status] || 'bg-cream-200 text-navy-500'}`}>
-                      {listing.status}
-                    </span>
+        <div className="space-y-4">
+          {listings.map((listing, idx) => {
+            const rotate = idx % 2 === 0 ? '-rotate-1' : 'rotate-1';
+            const statusClass = STATUS_STYLES[listing.status] || STATUS_STYLES.inactive;
+            return (
+              <div
+                key={listing.id}
+                className={`bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[24px] shadow-[4px_6px_0_#1B1250] overflow-hidden transition-all duration-200 hover:rotate-0 ${rotate}`}
+              >
+                <Link to={`/rent/${listing.id}`} className="flex gap-3 p-4">
+                  {/* Thumbnail / emoji */}
+                  <div className="flex-shrink-0">
+                    {listing.image_urls && listing.image_urls.length > 0 ? (
+                      <img
+                        src={listing.image_urls[0]}
+                        alt={listing.title}
+                        className="w-20 h-20 rounded-[16px] border-2 border-[#1B1250] object-cover"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-[16px] border-2 border-[#1B1250] bg-[#EAE4FB] flex items-center justify-center text-3xl">
+                        📦
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-navy-400 mt-1">
-                    <MapPin size={10} />
-                    <span className="truncate">{listing.location_name || 'Dehradun'}</span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="font-bold text-navy-900">
-                      ₹{listing.price_per_day}
-                      <span className="text-xs text-navy-400 font-normal">/day</span>
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-navy-400">
-                      <Eye size={12} /> {listing.views}
-                    </span>
-                    <span className="text-xs text-navy-400">
-                      {formatDistanceToNow(new Date(listing.created_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                </div>
-              </Link>
 
-              <div className="flex items-stretch border-t border-navy-100/30">
-                <button
-                  onClick={() => navigate(`/rent/edit/${listing.id}`)}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-navy-600 hover:bg-cream-50 transition-colors"
-                >
-                  <Pencil size={14} /> Edit
-                </button>
-                <div className="w-px bg-navy-100/30" />
-                <button
-                  onClick={() => { setRemoveError(null); setListingToRemove(listing); }}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-coral-500 hover:bg-coral-500/5 transition-colors"
-                >
-                  <Trash2 size={14} /> Remove
-                </button>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h2 className="font-display font-black text-base text-[#1B1250] truncate">{listing.title}</h2>
+                      <span className={`flex-shrink-0 ${statusClass}`}>{listing.status}</span>
+                    </div>
+
+                    {/* Price + views row */}
+                    <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                      <span className="bg-[#FFD41F] text-[#1B1250] border-2 border-[#1B1250] rounded-full px-2.5 py-0.5 text-[10px] font-black">
+                        ₹{listing.price_per_day}/day
+                      </span>
+                      <span className="bg-[#1B1250] text-[#F6FBD4] text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <Eye size={10} /> {listing.views} views
+                      </span>
+                    </div>
+
+                    {/* Location + time */}
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-[#1B1250]/60">
+                        <MapPin size={9} /> {listing.location_name || 'Dehradun'}
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#1B1250]/60">
+                        {formatDistanceToNow(new Date(listing.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-2 px-4 pb-4">
+                  <button
+                    onClick={() => navigate(`/rent/edit/${listing.id}`)}
+                    className="flex items-center gap-1.5 bg-[#F6FBD4] text-[#1B1250] border-3 border-[#1B1250] shadow-neo-sm rounded-full px-4 py-1.5 text-xs font-black uppercase hover:shadow-neo-pressed transition-all"
+                  >
+                    <Pencil size={12} /> Edit
+                  </button>
+                  <button
+                    onClick={() => { setRemoveError(null); setListingToRemove(listing); }}
+                    className="flex items-center gap-1.5 bg-[#E8622B] text-white border-3 border-[#1B1250] shadow-neo-sm rounded-full px-4 py-1.5 text-xs font-black uppercase hover:shadow-neo-pressed transition-all"
+                  >
+                    <Trash2 size={12} /> Remove
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Remove confirmation */}
+      {/* Remove confirmation dialog */}
       {listingToRemove && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl p-6 w-full sm:max-w-sm animate-slide-up shadow-lifted">
-            <h3 className="font-display text-xl text-navy-900 mb-2">Remove this listing?</h3>
-            <p className="text-sm text-navy-500 mb-4">
-              “{listingToRemove.title}” will be taken down and can no longer be rented out. This cannot be undone.
+        <div className="fixed inset-0 bg-[#1B1250]/60 z-50 flex items-end justify-center">
+          <div className="bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo-card rounded-[28px] rounded-b-none p-6 w-full max-w-lg animate-slide-up">
+            <h3 className="font-display font-black text-xl text-[#1B1250] mb-2">Remove listing?</h3>
+            <p className="text-sm font-bold text-[#1B1250]/70 mb-4">
+              "<span className="text-[#1B1250]">{listingToRemove.title}</span>" will be taken down and can no longer be rented out. This cannot be undone.
             </p>
+
             {removeError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+              <div className="mb-4 p-3 bg-[#E8622B]/10 border-2 border-[#E8622B] rounded-[16px] text-sm font-bold text-[#E8622B]">
                 {removeError}
               </div>
             )}
+
             <div className="flex gap-3">
               <button
                 onClick={() => setListingToRemove(null)}
-                className="flex-1 py-3 text-navy-600 border border-navy-100/30 rounded-xl font-medium hover:bg-navy-50 transition-colors"
+                className="flex-1 py-3 bg-[#F6FBD4] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-black text-sm hover:shadow-neo-pressed transition-all"
               >
                 Keep it
               </button>
               <button
                 onClick={() => removeListing(listingToRemove.id)}
                 disabled={removing}
-                className="flex-1 py-3 bg-coral-500 text-white rounded-xl font-medium hover:bg-coral-600 disabled:opacity-50 transition-colors btn-press"
+                className="flex-1 py-3 bg-[#E8622B] text-white border-3 border-[#1B1250] rounded-full font-black text-sm disabled:opacity-50 hover:shadow-neo-pressed transition-all"
               >
                 {removing ? 'Removing...' : 'Remove'}
               </button>

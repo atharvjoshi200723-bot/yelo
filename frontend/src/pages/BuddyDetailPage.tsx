@@ -16,6 +16,8 @@ const REQUEST_ACTIVITIES = [
   { name: 'Date', emoji: '❤️' },
 ];
 
+const ALL_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
 export default function BuddyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -118,8 +120,11 @@ export default function BuddyDetailPage() {
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-navy-900" />
+    <div className="pb-24 px-1 animate-pulse space-y-4">
+      <div className="w-10 h-10 rounded-full bg-[#1B1250]/10 border-2 border-dashed border-[#1B1250]/30" />
+      <div className="h-72 rounded-[28px] border-2 border-dashed border-[#1B1250]/30 bg-[#F6FBD4]/60" />
+      <div className="h-32 rounded-[22px] border-2 border-dashed border-[#1B1250]/30 bg-[#F6FBD4]/60" />
+      <div className="h-14 rounded-full border-2 border-dashed border-[#1B1250]/30 bg-[#F6FBD4]/60" />
     </div>
   );
 
@@ -130,195 +135,218 @@ export default function BuddyDetailPage() {
     : null;
 
   return (
-    <div className="pb-24">
+    <div className="pb-28 px-1">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-navy-400 hover:text-navy-600 text-sm font-medium transition-colors">
-          <ArrowLeft size={16} /> Back
+      <div className="flex items-center justify-between mb-5">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo flex items-center justify-center active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
+          aria-label="Go back"
+        >
+          <ArrowLeft size={18} className="text-[#1B1250]" />
         </button>
-        <span className="text-xs text-navy-400 font-medium">Back to activities</span>
+        <span className="text-xs font-bold text-[#1B1250]/50 uppercase tracking-widest">Buddy Profile</span>
       </div>
 
-      {/* Profile Card - Always Buddy gradient */}
-      <div className="bg-white rounded-3xl shadow-soft overflow-hidden mb-6">
-        {/* Avatar Section */}
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-8 text-center relative">
-          <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5">
-            <span className="text-xs font-medium text-white">🧑‍🤝‍🧑 Buddy</span>
-          </div>
-          <div className="w-28 h-28 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm border-2 border-white/30">
-            <span className="text-5xl font-bold text-white">{buddy.name?.charAt(0)}</span>
-          </div>
-          <h1 className="font-display text-3xl text-white">{buddy.name} · {age}</h1>
-          <p className="text-white/70 text-sm mt-2 flex items-center justify-center gap-1">
-            <MapPin size={14} /> {buddy.location_name || 'Dehradun'}
-          </p>
+      {/* Hero Card */}
+      <div className="relative bg-[#F6FBD4] rounded-[28px] border-3 border-[#1B1250] shadow-neo-card mb-5 overflow-visible">
+        {/* Buddy type badge — rotated top-right */}
+        <div className="absolute -top-3 right-5 z-10 bg-[#9A63E6] text-white text-[10px] font-black uppercase px-3 py-1 rounded-full border-2 border-[#1B1250] rotate-2 shadow-neo-sm">
+          🧑‍🤝‍🧑 Buddy
         </div>
 
-        <div className="p-6">
-          {/* Stats */}
-          <div className="flex items-center justify-center gap-4 sm:gap-8 mb-6">
-            <div className="text-center">
-              <div className="flex items-center gap-1">
-                <Star size={18} className="text-amber-500 fill-amber-500" />
-                <span className="font-bold text-navy-900 text-lg">{buddy.avg_rating ? Number(buddy.avg_rating).toFixed(1) : 'New'}</span>
-              </div>
-              <p className="text-xs text-navy-400">{buddy.total_reviews} reviews</p>
+        <div className="p-6 pt-8">
+          {/* Avatar */}
+          <div className="flex flex-col items-center mb-5">
+            <div className="w-28 h-28 rounded-[22px] border-3 border-[#1B1250] bg-[#9A63E6] flex items-center justify-center shadow-neo mb-4 overflow-hidden">
+              <span className="font-display font-black text-5xl text-white">{buddy.name?.charAt(0)}</span>
             </div>
-            <div className="w-px h-10 bg-navy-100" />
-            <div className="text-center">
-              <p className="font-bold text-navy-900 text-lg">{buddy.total_sessions}</p>
-              <p className="text-xs text-navy-400">completed</p>
-            </div>
-            <div className="w-px h-10 bg-navy-100" />
-            <div className="text-center">
-              <div className="flex items-center gap-1">
-                <CheckCircle size={16} className="text-sage-500" />
-                <span className="font-bold text-navy-900">✓</span>
-              </div>
-              <p className="text-xs text-navy-400">Verified</p>
-            </div>
+            <h1 className="font-display font-black text-2xl text-[#1B1250]">{buddy.name}{age ? ` · ${age}` : ''}</h1>
+            {buddy.description && (
+              <p className="italic font-semibold text-[#1B1250]/80 text-sm mt-1 text-center max-w-xs">"{buddy.description}"</p>
+            )}
           </div>
 
-          {/* Bio */}
-          <div className="bg-cream-50 rounded-2xl p-4 mb-6">
-            <p className="text-navy-600 text-center italic">"{buddy.description}"</p>
+          {/* Price stat */}
+          <div className="flex items-baseline justify-center gap-1 mb-4">
+            <span className="font-bold text-[#1B1250] text-lg">₹</span>
+            <span className="font-display font-black text-5xl text-[#1B1250]">{buddy.price_per_hour}</span>
+            <span className="font-bold text-[#1B1250]/60 text-sm">/session</span>
+          </div>
+
+          {/* Rating + sessions */}
+          <div className="flex items-center justify-center gap-3 mb-5">
+            <div className="flex items-center gap-1">
+              {[1,2,3,4,5].map(s => (
+                <Star
+                  key={s}
+                  size={14}
+                  className={Number(buddy.avg_rating) >= s ? 'text-[#FFD41F] fill-[#FFD41F]' : 'text-[#1B1250]/20'}
+                />
+              ))}
+              <span className="font-black text-[#1B1250] text-sm ml-1">
+                {buddy.avg_rating ? Number(buddy.avg_rating).toFixed(1) : 'New'}
+              </span>
+            </div>
+            <span className="text-[#1B1250]/30 font-bold">·</span>
+            <span className="font-bold text-sm text-[#1B1250]">{buddy.total_sessions} sessions</span>
+          </div>
+
+          {/* Location pill */}
+          <div className="flex justify-center mb-5">
+            <span className="inline-flex items-center gap-1.5 bg-[#2FA3B5] text-white text-xs font-black px-3 py-1.5 rounded-full border-2 border-[#1B1250] shadow-neo-sm">
+              <MapPin size={12} /> {buddy.location_name || 'Dehradun'}
+            </span>
           </div>
 
           {/* Activities */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold text-navy-400 tracking-wider uppercase mb-3">Available for</p>
-            <div className="flex flex-wrap gap-2">
-              {buddy.activities?.map(act => (
-                <span key={act} className="px-4 py-2 bg-cream-100 rounded-full text-sm font-medium text-navy-700">{act}</span>
-              ))}
-            </div>
-          </div>
-
-          {/* Price + Availability */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-cream-50 rounded-2xl p-4 text-center">
-              <p className="text-xs font-semibold text-navy-400 tracking-wider uppercase">Price</p>
-              <p className="text-2xl font-bold text-navy-900 mt-2">₹{buddy.price_per_hour}</p>
-              <p className="text-xs text-navy-400">/session</p>
-              {buddy.negotiable && <p className="text-xs text-sage-600 mt-1">Negotiable</p>}
-            </div>
-            <div className="bg-cream-50 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-navy-400 tracking-wider uppercase">Available</p>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {buddy.availability_days?.slice(0, 3).map(day => (
-                  <span key={day} className="px-2.5 py-1 bg-white rounded-lg text-xs text-navy-600 capitalize">{day.slice(0, 3)}</span>
+          {buddy.activities && buddy.activities.length > 0 && (
+            <div className="mb-5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#1B1250]/50 mb-2 text-center">Available for</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {buddy.activities.map(act => (
+                  <span key={act} className="px-3 py-1 bg-[#C5F030] text-[#1B1250] text-xs font-black rounded-full border-2 border-[#1B1250] shadow-neo-sm">
+                    {act}
+                  </span>
                 ))}
               </div>
-              <p className="text-xs text-navy-400 mt-2">{buddy.availability_times}</p>
             </div>
-          </div>
+          )}
+
+          {/* Availability days */}
+          {buddy.availability_days && buddy.availability_days.length > 0 && (
+            <div className="mb-5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#1B1250]/50 mb-2 text-center">Availability</p>
+              <div className="flex gap-1.5 justify-center flex-wrap">
+                {ALL_DAYS.map(day => {
+                  const active = buddy.availability_days!.some(d => d.toLowerCase().startsWith(day.slice(0,3)));
+                  return (
+                    <span
+                      key={day}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border-2 border-[#1B1250] ${active ? 'bg-[#C5F030] text-[#1B1250]' : 'bg-[#F6FBD4] text-[#1B1250]/40'}`}
+                    >
+                      {day.slice(0,3)}
+                    </span>
+                  );
+                })}
+              </div>
+              {buddy.availability_times && (
+                <p className="text-xs font-semibold text-[#1B1250]/60 text-center mt-2">{buddy.availability_times}</p>
+              )}
+            </div>
+          )}
+
+          {/* Negotiable badge */}
+          {buddy.negotiable && (
+            <div className="flex justify-center mb-2">
+              <span className="px-3 py-1 bg-[#3F8A12] text-white text-xs font-black rounded-full border-2 border-[#1B1250] shadow-neo-sm">
+                ✓ Negotiable
+              </span>
+            </div>
+          )}
 
           {/* Safety Notice */}
-          <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4">
-            <div className="flex items-start gap-3">
-              <Shield size={16} className="text-amber-600 mt-0.5" />
-              <div className="text-xs text-navy-600 leading-relaxed">
-                <p className="font-semibold mb-1">Safety Rules</p>
-                <p>18+ only · Meet in public · Social companionship only · No sexual services</p>
-              </div>
-            </div>
+          <div className="mt-5 bg-[#EAE4FB] rounded-[16px] border-2 border-[#1B1250]/20 p-3 flex items-start gap-2">
+            <Shield size={14} className="text-[#9A63E6] mt-0.5 shrink-0" />
+            <p className="text-[11px] font-bold text-[#1B1250]/70 leading-relaxed">
+              18+ only · Meet in public · Social companionship only · No sexual services
+            </p>
           </div>
         </div>
       </div>
 
+      {/* Own profile notice */}
+      {user?.id === buddy.user_id && (
+        <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[22px] shadow-neo p-4 mb-5 flex items-center justify-between">
+          <span className="font-black text-[#1B1250] text-sm">This is your profile</span>
+          <button
+            onClick={() => navigate('/buddy/edit')}
+            className="px-4 py-2 bg-[#C5F030] text-[#1B1250] font-black text-xs uppercase rounded-full border-3 border-[#1B1250] shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
+          >
+            Edit Profile
+          </button>
+        </div>
+      )}
+
       {/* Report & Block Actions */}
       {user?.id !== buddy.user_id && (
-        <div className="flex gap-3 mb-6">
+        <div className="flex gap-3 mb-5">
           <button onClick={() => setShowReportModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-cream-50 text-navy-500 rounded-xl text-sm font-medium hover:bg-cream-100 transition-colors">
-            <Flag size={16} /> Report
+            className="flex items-center gap-2 px-4 py-2 bg-[#F6FBD4] text-[#E8622B] border-3 border-[#1B1250] rounded-full text-xs font-black shadow-neo-sm hover:bg-[#EAE4FB] transition-colors">
+            <Flag size={14} /> Report
           </button>
           <BlockButton targetUserId={buddy.user_id || ''} />
         </div>
       )}
 
-      {/* Request Sent State */}
+      {/* Request Status Display */}
       {requestState && (
-        <div className={`rounded-3xl p-6 text-center mb-6 border ${requestState.status === 'accepted' ? 'bg-sage-50 border-sage-200' : requestState.status === 'rejected' ? 'bg-navy-50 border-navy-200' : 'bg-amber-50 border-amber-200'}`}>
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${requestState.status === 'accepted' ? 'bg-sage-500' : requestState.status === 'rejected' ? 'bg-navy-100' : 'bg-amber-500'}`}>
+        <div className={`rounded-[22px] border-3 border-[#1B1250] p-6 text-center mb-5 shadow-neo ${
+          requestState.status === 'accepted'
+            ? 'bg-[#C5F030]'
+            : requestState.status === 'rejected'
+            ? 'bg-[#F6FBD4]'
+            : 'bg-[#FFD41F]'
+        }`}>
+          <div className={`w-14 h-14 rounded-full border-3 border-[#1B1250] flex items-center justify-center mx-auto mb-3 shadow-neo-sm ${
+            requestState.status === 'accepted' ? 'bg-[#1B1250]' : requestState.status === 'rejected' ? 'bg-[#E8622B]' : 'bg-[#1B1250]'
+          }`}>
             {requestState.status === 'accepted' ? (
-              <CheckCircle size={32} className="text-white" />
+              <CheckCircle size={28} className="text-white" />
             ) : requestState.status === 'rejected' ? (
-              <X size={32} className="text-navy-400" />
+              <X size={28} className="text-white" />
             ) : (
-              <Clock size={32} className="text-white" />
+              <Clock size={28} className="text-white" />
             )}
           </div>
-          <h3 className="font-display text-xl text-navy-900 mb-2">
+          <h3 className="font-display font-black text-xl text-[#1B1250] mb-2">
             {requestState.status === 'accepted' ? 'Request accepted!' :
              requestState.status === 'rejected' ? 'Request declined' :
              'Request sent!'}
           </h3>
-          <p className="text-sm text-navy-500 mb-4">
+          <p className="text-sm font-bold text-[#1B1250]/70 mb-4">
             {requestState.status === 'accepted' ? 'You can now chat with this buddy.' :
              requestState.status === 'rejected' ? 'This buddy is no longer interested.' :
              'Wait for the provider to accept, then you can chat.'}
           </p>
           {requestState.status === 'accepted' && conversationId ? (
-            <button onClick={openChat} className="bg-navy-900 text-cream-50 px-6 py-3 rounded-2xl font-medium hover:bg-navy-800 transition-all btn-press">
-              Open Chat
+            <button onClick={openChat} className="inline-flex items-center gap-2 bg-[#1B1250] text-white px-6 py-3 rounded-full font-black text-sm border-3 border-[#1B1250] shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all">
+              <MessageCircle size={16} /> Open Chat
             </button>
           ) : requestState.status === 'accepted' && !conversationId ? (
-            <button disabled className="bg-navy-200 text-navy-400 px-6 py-3 rounded-2xl font-medium cursor-not-allowed" aria-label="Chat being set up">
+            <button disabled className="inline-flex items-center gap-2 bg-[#1B1250]/30 text-[#1B1250]/50 px-6 py-3 rounded-full font-black text-sm border-3 border-[#1B1250]/30 cursor-not-allowed" aria-label="Chat being set up">
               Setting up chat...
             </button>
           ) : requestState.status === 'rejected' ? (
-            <button onClick={() => { setRequestState(null); setConversationId(null); }} className="bg-navy-900 text-cream-50 px-6 py-3 rounded-2xl font-medium hover:bg-navy-800 transition-all btn-press">
+            <button onClick={() => { setRequestState(null); setConversationId(null); }} className="bg-[#F6FBD4] text-[#1B1250] px-6 py-3 rounded-full font-black text-sm border-3 border-[#1B1250] shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all">
               Try another buddy
             </button>
           ) : (
-            <button disabled className="bg-navy-200 text-navy-400 px-6 py-3 rounded-2xl font-medium cursor-not-allowed" aria-label="Waiting for approval">
-              Request sent — waiting for approval
+            <button disabled className="bg-[#1B1250]/20 text-[#1B1250]/50 px-6 py-3 rounded-full font-black text-sm border-3 border-[#1B1250]/20 cursor-not-allowed" aria-label="Waiting for approval">
+              Waiting for approval…
             </button>
           )}
         </div>
       )}
 
-      {/* CTA */}
-      {!requestState && user?.id !== buddy.user_id && (
-        <div className="flex gap-3">
-          <button
-            onClick={() => setShowRequestForm(true)}
-            className="flex-1 bg-navy-900 text-cream-50 py-4 rounded-2xl font-medium hover:bg-navy-800 transition-all btn-press text-lg"
-          >
-            Request
-          </button>
-          <button
-            onClick={() => {
-              if (conversationId) {
-                navigate(`/messages?conv=${conversationId}`);
-              } else {
-                alert('No chat available right now.');
-              }
-            }}
-            className="w-16 h-16 bg-white border border-navy-100/30 rounded-2xl flex items-center justify-center hover:bg-navy-50 transition-colors"
-            aria-label="Open chat"
-          >
-            <MessageCircle size={24} className={conversationId ? 'text-navy-600' : 'text-navy-300'} />
-          </button>
-        </div>
-      )}
-
-      {/* Request Modal */}
+      {/* Request Form Modal */}
       {showRequestForm && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-[#1B1250]/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-[#EAE4FB] w-full sm:max-w-md sm:rounded-[28px] rounded-t-[28px] border-3 border-[#1B1250] shadow-neo-card p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between mb-1">
-              <h2 className="font-display text-2xl text-navy-900">Request {buddy.name}</h2>
-              <button onClick={() => { setShowRequestForm(false); setRequestError(null); }} className="p-2 -mt-1 -mr-2 hover:bg-navy-50 rounded-xl transition-colors" aria-label="Close">
-                <X size={20} className="text-navy-400" />
+              <h2 className="font-display font-black text-2xl text-[#1B1250]">Request {buddy.name}</h2>
+              <button
+                onClick={() => { setShowRequestForm(false); setRequestError(null); }}
+                className="w-8 h-8 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] flex items-center justify-center shadow-neo-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                aria-label="Close"
+              >
+                <X size={16} className="text-[#1B1250]" />
               </button>
             </div>
-            <p className="text-sm text-navy-400 mb-6">What would you like to do together?</p>
+            <p className="text-sm font-bold text-[#1B1250]/60 mb-6">What would you like to do together?</p>
 
             {requestError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 whitespace-pre-line">
+              <div className="mb-4 p-3 bg-[#E8622B] border-3 border-[#1B1250] rounded-[16px] text-sm font-bold text-white whitespace-pre-line shadow-neo-sm">
                 {requestError}
               </div>
             )}
@@ -326,20 +354,20 @@ export default function BuddyDetailPage() {
             <div className="space-y-5">
               {/* Activity Selection */}
               <div>
-                <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-3">Activity</label>
+                <label className="block text-[10px] font-black text-[#1B1250]/50 tracking-widest uppercase mb-3">Activity</label>
                 <div className="grid grid-cols-3 gap-2">
                   {REQUEST_ACTIVITIES.map(act => (
                     <button
                       key={act.name}
                       onClick={() => setRequestForm({ ...requestForm, activity: act.name })}
-                      className={`p-3 rounded-2xl text-center transition-all ${
+                      className={`p-3 rounded-[18px] text-center border-3 border-[#1B1250] font-black text-xs transition-all ${
                         requestForm.activity === act.name
-                          ? 'bg-navy-900 text-cream-50'
-                          : 'bg-cream-100 text-navy-700 hover:bg-cream-200'
+                          ? 'bg-[#C5F030] text-[#1B1250] shadow-neo-sm translate-x-[2px] translate-y-[2px]'
+                          : 'bg-[#F6FBD4] text-[#1B1250] shadow-neo-sm'
                       }`}
                     >
                       <span className="text-xl block mb-1">{act.emoji}</span>
-                      <span className="text-xs font-medium">{act.name}</span>
+                      <span>{act.name}</span>
                     </button>
                   ))}
                 </div>
@@ -348,32 +376,32 @@ export default function BuddyDetailPage() {
               {/* Date & Time */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">Date</label>
+                  <label className="block text-[10px] font-black text-[#1B1250]/50 tracking-widest uppercase mb-2">Date</label>
                   <input
                     type="date"
                     value={requestForm.proposedDate}
                     onChange={e => setRequestForm({ ...requestForm, proposedDate: e.target.value })}
-                    className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                    className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">Time</label>
+                  <label className="block text-[10px] font-black text-[#1B1250]/50 tracking-widest uppercase mb-2">Time</label>
                   <input
                     type="time"
                     value={requestForm.proposedTime}
                     onChange={e => setRequestForm({ ...requestForm, proposedTime: e.target.value })}
-                    className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                    className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Duration */}
               <div>
-                <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">Duration</label>
+                <label className="block text-[10px] font-black text-[#1B1250]/50 tracking-widest uppercase mb-2">Duration</label>
                 <select
                   value={requestForm.proposedDurationHours}
                   onChange={e => setRequestForm({ ...requestForm, proposedDurationHours: e.target.value })}
-                  className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                  className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none"
                 >
                   <option value="1">1 hour</option>
                   <option value="1.5">1.5 hours</option>
@@ -385,11 +413,11 @@ export default function BuddyDetailPage() {
 
               {/* Message */}
               <div>
-                <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">Your message</label>
+                <label className="block text-[10px] font-black text-[#1B1250]/50 tracking-widest uppercase mb-2">Your message</label>
                 <textarea
                   value={requestForm.message}
                   onChange={e => setRequestForm({ ...requestForm, message: e.target.value })}
-                  className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 placeholder-navy-300 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none"
+                  className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none resize-none"
                   rows={3}
                   placeholder={`Would you like to ${requestForm.activity?.toLowerCase() || 'hang out'}?`}
                 />
@@ -397,12 +425,12 @@ export default function BuddyDetailPage() {
 
               {/* Location */}
               <div>
-                <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-2">Suggested location</label>
+                <label className="block text-[10px] font-black text-[#1B1250]/50 tracking-widest uppercase mb-2">Suggested location</label>
                 <input
                   type="text"
                   value={requestForm.proposedLocation}
                   onChange={e => setRequestForm({ ...requestForm, proposedLocation: e.target.value })}
-                  className="w-full px-4 py-3 border border-navy-100/30 rounded-xl text-sm text-navy-800 placeholder-navy-300 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                  className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none"
                   placeholder="e.g., Pacific Mall, Rajpur Road"
                 />
               </div>
@@ -412,21 +440,19 @@ export default function BuddyDetailPage() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowRequestForm(false)}
-                className="flex-1 py-3.5 text-navy-500 border border-navy-100/30 rounded-2xl font-medium hover:bg-navy-50 transition-colors"
+                className="flex-1 py-3.5 bg-[#F6FBD4] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-black text-sm shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRequest}
                 disabled={submitting || !requestForm.proposedDate || !requestForm.activity}
-                className="flex-1 py-3.5 bg-navy-900 text-cream-50 rounded-2xl font-medium hover:bg-navy-800 disabled:opacity-50 transition-all btn-press flex items-center justify-center gap-2"
+                className="flex-1 py-3.5 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-black text-sm shadow-neo disabled:opacity-40 active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all flex items-center justify-center gap-2"
               >
                 {submitting ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-cream-50" />
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1B1250]" />
                 ) : (
-                  <>
-                    <Send size={16} /> Send Request
-                  </>
+                  <><Send size={15} /> Send Request</>
                 )}
               </button>
             </div>
@@ -441,6 +467,49 @@ export default function BuddyDetailPage() {
           targetId={buddy.id}
           onClose={() => setShowReportModal(false)}
         />
+      )}
+
+      {/* Sticky bottom action bar */}
+      {user?.id !== buddy.user_id && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#F6FBD4] border-t-3 border-[#1B1250] px-4 py-4 flex gap-3 items-center shadow-[0_-4px_0_#1B1250]">
+          {!requestState ? (
+            <>
+              <button
+                onClick={() => setShowRequestForm(true)}
+                className="flex-1 py-4 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-display font-black uppercase text-base shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
+              >
+                Send Request
+              </button>
+              <button
+                onClick={() => {
+                  if (conversationId) {
+                    navigate(`/messages?conv=${conversationId}`);
+                  } else {
+                    alert('No chat available right now.');
+                  }
+                }}
+                className="w-14 h-14 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-full flex items-center justify-center shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
+                aria-label="Open chat"
+              >
+                <MessageCircle size={22} className={conversationId ? 'text-[#1B1250]' : 'text-[#1B1250]/30'} />
+              </button>
+            </>
+          ) : requestState.status === 'accepted' && conversationId ? (
+            <button
+              onClick={openChat}
+              className="flex-1 py-4 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-display font-black uppercase text-base shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all flex items-center justify-center gap-2"
+            >
+              <MessageCircle size={18} /> Chat
+            </button>
+          ) : (
+            <button
+              disabled
+              className="flex-1 py-4 bg-[#1B1250]/10 text-[#1B1250]/40 border-3 border-[#1B1250]/20 rounded-full font-display font-black uppercase text-base cursor-not-allowed"
+            >
+              Request Sent
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

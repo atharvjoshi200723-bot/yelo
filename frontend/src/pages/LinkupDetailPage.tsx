@@ -110,10 +110,34 @@ export default function LinkupDetailPage() {
     setDecidingOn(null);
   };
 
-  if (loading) return <ListSkeleton count={3} height="h-24" />;
+  if (loading) {
+    return (
+      <div className="pb-24 max-w-lg mx-auto space-y-4 px-4 pt-4">
+        {[0, 1, 2].map(i => (
+          <div
+            key={i}
+            className="h-24 rounded-[26px] border-3 border-dashed border-[#1B1250] bg-[#F6FBD4] animate-pulse"
+          />
+        ))}
+      </div>
+    );
+  }
 
   if (error || !post) {
-    return <ErrorState message={error || 'Linkup not found'} onRetry={() => { setLoading(true); fetchPost(); }} />;
+    return (
+      <div className="pb-24 max-w-lg mx-auto px-4 pt-6">
+        <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-neo-card p-8 text-center">
+          <div className="text-5xl mb-4">⚠️</div>
+          <p className="font-black text-[#1B1250] text-lg mb-6">{error || 'Linkup not found'}</p>
+          <button
+            onClick={() => { setLoading(true); fetchPost(); }}
+            className="bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-neo rounded-full font-display font-black uppercase px-6 py-3 active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const plan = parsePlanPost(post);
@@ -125,178 +149,169 @@ export default function LinkupDetailPage() {
   const authorName = post.author_name || 'Anonymous';
 
   return (
-    <div className="pb-24 max-w-lg mx-auto">
+    <div className="pb-28 max-w-lg mx-auto px-4 pt-4 bg-[#EAE4FB] min-h-screen">
       {/* Back */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 py-2.5 -my-1 text-navy-500 hover:text-navy-700 mb-4 transition-colors"
+        className="w-10 h-10 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo flex items-center justify-center mb-5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
       >
-        <ArrowLeft size={18} /> Back
+        <ArrowLeft size={18} className="text-[#1B1250]" />
       </button>
 
-      {/* Card */}
-      <div className="bg-white rounded-3xl shadow-soft overflow-hidden">
-        <div className="p-6">
-          {/* Author row */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-navy-900 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-              {post.author_avatar ? (
-                <img src={post.author_avatar} alt={authorName} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-cream-50 font-medium text-sm">{authorName.charAt(0).toUpperCase()}</span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <Link
-                to={`/profile/${post.author_id || post.user_id}`}
-                className="font-semibold text-navy-900 text-sm hover:text-navy-700 transition-colors truncate block"
-              >
-                {authorName}
-              </Link>
-              <span className="text-xs text-navy-400">
-                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-              </span>
-            </div>
-            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-navy-100 text-navy-600 flex-shrink-0">
-              💬 General
+      {/* Hero card */}
+      <div className="relative bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[28px] shadow-neo-card p-5 mb-4">
+        {/* Category badge */}
+        <span className="bg-[#9A63E6] text-white text-[10px] font-black px-2.5 py-1 rounded-full border-2 border-[#1B1250] absolute -top-2 -right-2 rotate-2 select-none">
+          💬 General
+        </span>
+
+        {/* Plan icon */}
+        <div className="w-20 h-20 bg-[#C5F030] rounded-full border-3 border-[#1B1250] shadow-neo flex items-center justify-center text-4xl mb-4 mx-auto">
+          {plan ? '🗓️' : '💬'}
+        </div>
+
+        {/* Title */}
+        {plan ? (
+          <h1 className="font-display font-black text-2xl text-[#1B1250] leading-tight mb-3 text-center">
+            {plan.title}
+          </h1>
+        ) : (
+          <p className="font-display font-black text-2xl text-[#1B1250] leading-tight mb-3 text-center whitespace-pre-wrap">
+            {post.content}
+          </p>
+        )}
+
+        {/* Info pills */}
+        {plan && plan.details.length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-center mb-4">
+            {plan.details
+              .filter(d => !/max\s+\d+\s+participants?/i.test(d.label))
+              .map(d => {
+                const icon = d.icon;
+                const isDate = icon === '📅' || icon === '🕐' || icon === '⏰';
+                const isLoc = icon === '📍' || icon === '🗺️' || icon === '📌';
+                const bg = isDate ? 'bg-[#FFD41F]' : isLoc ? 'bg-[#2FA3B5] text-white' : 'bg-[#C5F030]';
+                return (
+                  <span
+                    key={`${d.icon}-${d.label}`}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-[#1B1250] text-[#1B1250] text-xs font-bold shadow-neo-sm ${bg}`}
+                  >
+                    <span aria-hidden="true">{d.icon}</span>
+                    <span>{d.label}</span>
+                  </span>
+                );
+              })}
+          </div>
+        )}
+
+        {post.location_name && (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-[#1B1250] bg-[#2FA3B5] text-white text-xs font-bold shadow-neo-sm mb-4">
+            <MapPin size={12} />
+            <span>{post.location_name}</span>
+          </div>
+        )}
+
+        {/* Author row */}
+        <div className="flex items-center gap-3 mt-2">
+          <div className="w-10 h-10 rounded-full bg-[#1B1250] text-[#F6FBD4] font-black flex items-center justify-center border-2 border-[#1B1250] ring-2 ring-[#E8622B] flex-shrink-0 overflow-hidden">
+            {post.author_avatar ? (
+              <img src={post.author_avatar} alt={authorName} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm">{authorName.charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <Link
+              to={`/profile/${post.author_id || post.user_id}`}
+              className="font-black text-[#1B1250] text-sm hover:underline truncate block"
+            >
+              {authorName}
+            </Link>
+            <span className="text-xs text-[#1B1250]/50 font-semibold">
+              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
             </span>
           </div>
-
-          {/* Plan body */}
-          {plan ? (
-            <>
-              <h1 className="font-display text-display-md text-navy-900 leading-tight mb-3">
-                {plan.title}
-              </h1>
-              {plan.description && (
-                <p className="text-navy-800 whitespace-pre-wrap leading-relaxed mb-4">
-                  {plan.description}
-                </p>
-              )}
-              {plan.details.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {plan.details
-                    .filter(d => !/max\s+\d+\s+participants?/i.test(d.label))
-                    .map(d => (
-                      <span
-                        key={`${d.icon}-${d.label}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cream-100 text-navy-600 text-sm font-medium"
-                      >
-                        <span aria-hidden="true">{d.icon}</span>
-                        <span>{d.label}</span>
-                      </span>
-                    ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <p className="font-display text-display-md text-navy-900 leading-tight whitespace-pre-wrap mb-4">
-              {post.content}
-            </p>
-          )}
-
-          {post.location_name && (
-            <div className="flex items-center gap-1.5 text-sm text-navy-400 mb-4">
-              <MapPin size={14} />
-              <span>{post.location_name}</span>
-            </div>
-          )}
-
-          {/* Stats row */}
-          <div className="flex items-center gap-4 pt-4 border-t border-navy-100/30 text-sm text-navy-400">
-            <span className="flex items-center gap-1.5">
-              <Heart size={16} /> {Math.max(0, post.likes_count ?? 0)}
+          <div className="flex items-center gap-3 text-[#1B1250]/50 text-xs font-bold">
+            <span className="flex items-center gap-1">
+              <Heart size={14} /> {Math.max(0, post.likes_count ?? 0)}
             </span>
-            <span className="flex items-center gap-1.5">
-              <MessageCircle size={16} /> {post.comments_count ?? 0}
+            <span className="flex items-center gap-1">
+              <MessageCircle size={14} /> {post.comments_count ?? 0}
             </span>
           </div>
         </div>
-
-        {/* Participants footer — 3/4 counter bottom-left, join button right */}
-        {ratio && (
-          <div className="px-5 py-4 border-t border-navy-100/30 flex items-center justify-between gap-3 bg-cream-50/50">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white border border-navy-100/30 shadow-soft">
-                <Users size={14} className="text-navy-500 shrink-0" />
-                <span className="text-sm font-bold text-navy-900 tabular-nums">{ratio}</span>
-              </div>
-              <span className="text-xs text-navy-400 truncate">
-                {isFull ? 'spots full' : `${Math.max(0, (post.max_participants ?? 0) - (post.participants_count ?? 0))} spots open`}
-              </span>
-            </div>
-
-            {!isAuthor && (
-              <button
-                onClick={toggleJoin}
-                disabled={joining || (isFull && !post.is_participant && !post.has_pending_request)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all btn-press shrink-0 disabled:opacity-50 ${
-                  post.is_participant
-                    ? 'bg-white border border-navy-100/30 text-navy-600 hover:bg-navy-50'
-                    : post.has_pending_request
-                      ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                      : 'bg-navy-900 text-cream-50 hover:bg-navy-800'
-                }`}
-              >
-                {post.is_participant ? <UserMinus size={15} /> : post.has_pending_request ? <Clock size={15} /> : <UserPlus size={15} />}
-                {post.is_participant
-                  ? 'Leave'
-                  : post.has_pending_request
-                    ? (joining ? 'Withdrawing…' : 'Requested')
-                    : isFull
-                      ? 'Full'
-                      : (joining ? 'Sending…' : 'Request to join')}
-              </button>
-            )}
-          </div>
-        )}
       </div>
+
+      {/* Description card */}
+      {plan && plan.description && (
+        <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-neo-card p-5 mb-4">
+          <p className="text-xs font-black text-[#1B1250] uppercase tracking-wider mb-2">About this plan</p>
+          <p className="text-sm font-semibold text-[#1B1250] whitespace-pre-wrap leading-relaxed">
+            {plan.description}
+          </p>
+        </div>
+      )}
+
+      {/* Participants section */}
+      {ratio && (
+        <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-neo-card p-4 mb-4 flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-[#1B1250] bg-[#C5F030] text-[#1B1250] text-xs font-black shadow-neo-sm">
+            <Users size={12} />
+            <span>{ratio}</span>
+          </span>
+          <span className="text-xs font-bold text-[#1B1250]/60">
+            {isFull ? '🔒 spots full' : `${Math.max(0, (post.max_participants ?? 0) - (post.participants_count ?? 0))} spots open`}
+          </span>
+        </div>
+      )}
 
       {/* Owner: pending join requests awaiting a decision */}
       {isAuthor && requests.length > 0 && (
-        <div className="bg-white rounded-3xl shadow-soft mt-4 overflow-hidden">
+        <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-neo-card mb-4 overflow-hidden">
           <div className="px-5 pt-4 pb-2 flex items-center gap-2">
-            <Users size={16} className="text-navy-500" />
-            <h2 className="font-semibold text-navy-900 text-sm">
+            <Users size={16} className="text-[#1B1250]" />
+            <h2 className="text-xs font-black text-[#1B1250] uppercase tracking-wider">
               {requests.length} join request{requests.length === 1 ? '' : 's'}
             </h2>
           </div>
           <ul>
             {requests.map(r => (
-              <li key={r.user_id} className="flex items-center gap-3 px-5 py-3 border-t border-navy-100/20">
-                <div className="w-9 h-9 bg-navy-900 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <li key={r.user_id} className="flex items-center gap-3 px-5 py-3 border-t-2 border-dashed border-[#1B1250]/20">
+                <div className="w-9 h-9 rounded-full bg-[#1B1250] text-[#F6FBD4] font-black flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-[#9A63E6]">
                   {r.avatar_url ? (
                     <img src={r.avatar_url} alt={r.name} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-cream-50 font-medium text-xs">{(r.name || '?').charAt(0).toUpperCase()}</span>
+                    <span className="text-xs">{(r.name || '?').charAt(0).toUpperCase()}</span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <Link
                     to={`/profile/${r.user_id}`}
-                    className="font-medium text-navy-900 text-sm truncate block hover:text-navy-700"
+                    className="font-black text-[#1B1250] text-sm truncate block hover:underline"
                   >
                     {r.name}
                   </Link>
-                  <span className="text-xs text-navy-400">
+                  <span className="text-xs text-[#1B1250]/50 font-semibold">
                     asked {formatDistanceToNow(new Date(r.requested_at), { addSuffix: true })}
                   </span>
                 </div>
+                {/* Reject */}
                 <button
                   onClick={() => decide(r.user_id, false)}
                   disabled={decidingOn !== null}
                   aria-label={`Reject ${r.name}`}
-                  className="p-2 rounded-xl border border-navy-100/30 text-navy-400 hover:text-coral-500 hover:border-coral-500/40 transition-colors disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-full bg-[#FF9A1F] text-[#1B1250] border-2 border-[#1B1250] shadow-neo-sm text-xs font-black uppercase active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50"
                 >
-                  <X size={16} />
+                  <X size={14} />
                 </button>
+                {/* Accept */}
                 <button
                   onClick={() => decide(r.user_id, true)}
                   disabled={decidingOn !== null || isFull}
                   aria-label={`Accept ${r.name}`}
-                  className="p-2 rounded-xl bg-navy-900 text-cream-50 hover:bg-navy-800 transition-colors disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-full bg-[#C5F030] text-[#1B1250] border-2 border-[#1B1250] shadow-neo-sm text-xs font-black uppercase active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50"
                 >
-                  <Check size={16} />
+                  <Check size={14} />
                 </button>
               </li>
             ))}
@@ -304,9 +319,36 @@ export default function LinkupDetailPage() {
         </div>
       )}
 
+      {/* Join error */}
       {joinError && (
-        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+        <div className="bg-[#F6FBD4] border-3 border-[#E8622B] rounded-[20px] shadow-neo p-3 mb-4 text-sm font-bold text-[#E8622B]">
           {joinError}
+        </div>
+      )}
+
+      {/* Sticky bottom bar */}
+      {!isAuthor && (
+        <div className="fixed bottom-0 left-0 right-0 bg-[#F6FBD4] border-t-3 border-[#1B1250] p-4 flex gap-3 z-30">
+          <button
+            onClick={toggleJoin}
+            disabled={joining || (isFull && !post.is_participant && !post.has_pending_request)}
+            className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full border-3 border-[#1B1250] font-display font-black uppercase text-sm shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all disabled:opacity-50 ${
+              post.is_participant
+                ? 'bg-[#F6FBD4] text-[#1B1250]'
+                : post.has_pending_request
+                  ? 'bg-[#FFD41F] text-[#1B1250]'
+                  : 'bg-[#C5F030] text-[#1B1250]'
+            }`}
+          >
+            {post.is_participant ? <UserMinus size={16} /> : post.has_pending_request ? <Clock size={16} /> : <UserPlus size={16} />}
+            {post.is_participant
+              ? 'Leave'
+              : post.has_pending_request
+                ? (joining ? 'Withdrawing…' : 'Requested')
+                : isFull
+                  ? '🔒 Full'
+                  : (joining ? 'Sending…' : 'Request to Join')}
+          </button>
         </div>
       )}
     </div>

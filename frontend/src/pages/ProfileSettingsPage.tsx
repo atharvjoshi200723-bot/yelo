@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { User, BuddyProfile } from '../types';
-import { ArrowLeft, User as UserIcon, Shield, MapPin, GraduationCap, Edit2, Upload, Check, Mail, Phone, LogOut, ChevronRight } from 'lucide-react';
+import { ArrowLeft, User as UserIcon, Shield, MapPin, GraduationCap, Edit2, Upload, Check, Mail, Phone, LogOut, ChevronRight, BookOpen, Package, FileText, UserPlus } from 'lucide-react';
 
 export default function ProfileSettingsPage() {
   const { user, refreshUser, logout } = useAuth();
@@ -79,38 +79,34 @@ export default function ProfileSettingsPage() {
   };
 
   if (loading) return (
-    <div className="pb-24 max-w-lg mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-6 h-6 skeleton rounded" />
-        <div className="w-40 h-6 skeleton rounded" />
-      </div>
-      <div className="bg-white rounded-3xl shadow-soft overflow-hidden mb-6">
-        <div className="h-24 skeleton" />
-        <div className="px-6 pb-6">
-          <div className="flex items-end gap-4 -mt-10">
-            <div className="w-20 h-20 bg-white rounded-2xl shadow-md border-4 border-white skeleton" />
-            <div className="flex-1 pb-1 space-y-2">
-              <div className="w-32 h-5 skeleton" />
-              <div className="w-40 h-4 skeleton" />
-            </div>
-          </div>
-        </div>
+    <div className="pb-24 max-w-lg mx-auto px-4 pt-6">
+      <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] p-8 flex flex-col items-center gap-4">
+        <div className="animate-spin w-10 h-10 rounded-full border-4 border-[#1B1250] border-t-[#C5F030]" />
+        <p className="font-black text-sm text-[#1B1250]/60 uppercase tracking-widest">Loading…</p>
       </div>
     </div>
   );
 
   if (error) return (
-    <div className="pb-24 max-w-lg mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(-1)} className="text-navy-400 hover:text-navy-600">
-          <ArrowLeft size={20} />
+    <div className="pb-24 max-w-lg mx-auto px-4 pt-6 space-y-5">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] flex items-center justify-center active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
+        >
+          <ArrowLeft size={18} className="text-[#1B1250]" />
         </button>
-        <h1 className="font-display text-2xl text-navy-900">Profile Settings</h1>
+        <h1 className="font-display font-black text-2xl text-[#1B1250]">Settings</h1>
       </div>
-      <div className="text-center py-16">
-        <p className="text-navy-400 mb-4">{error}</p>
-        <button onClick={() => window.location.reload()} className="px-5 py-2.5 bg-navy-900 text-cream-50 rounded-xl font-medium hover:bg-navy-800 transition-all btn-press">
-          Try again
+      <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] p-10 text-center">
+        <div className="text-5xl mb-4">⚠️</div>
+        <p className="font-display font-black text-xl text-[#1B1250] mb-6">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] rounded-full font-display font-black uppercase px-6 py-3 active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
+        >
+          Try Again
         </button>
       </div>
     </div>
@@ -119,213 +115,278 @@ export default function ProfileSettingsPage() {
   if (!profile) return null;
 
   return (
-    <div className="pb-24 max-w-lg mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(-1)} className="text-navy-400 hover:text-navy-600 transition-colors">
-          <ArrowLeft size={20} />
+    <div className="pb-24 max-w-lg mx-auto px-4 pt-6 space-y-4">
+
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3 mb-2">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] flex items-center justify-center active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
+        >
+          <ArrowLeft size={18} className="text-[#1B1250]" />
         </button>
-        <h1 className="font-display text-2xl text-navy-900">Profile Settings</h1>
+        <h1 className="font-display font-black text-2xl text-[#1B1250]">Settings</h1>
       </div>
 
-      {/* Profile Card */}
-      <div className="bg-white rounded-3xl shadow-soft overflow-hidden mb-6">
-        {/* Avatar */}
-        <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-24" />
-        <div className="px-6 pb-6">
-          <div className="flex items-end gap-4 -mt-10">
-            <label className="relative cursor-pointer">
-              <div className="w-20 h-20 bg-white rounded-2xl shadow-md flex items-center justify-center border-4 border-white overflow-hidden">
-                {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Your avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-2xl font-bold text-amber-600">{profile.name?.charAt(0) || '?'}</span>
-                )}
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-navy-900 rounded-full flex items-center justify-center">
-                {uploading ? (
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
-                ) : (
-                  <Upload size={12} className="text-white" />
-                )}
-              </div>
-              <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-            </label>
-            <div className="flex-1 pb-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-navy-900">{profile.name}</h2>
-                <button onClick={() => setEditing(!editing)} className="text-navy-300 hover:text-navy-600 transition-colors">
-                  <Edit2 size={16} />
-                </button>
-              </div>
-              <p className="text-sm text-navy-400">{profile.email}</p>
-            </div>
-          </div>
+      {/* ── Profile Card ── */}
+      <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] p-6">
 
-          {/* Edit Form */}
-          {editing && (
-            <div className="mt-4 space-y-3 p-4 bg-cream-50 rounded-2xl">
-              <div>
-                <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-1">Name</label>
-                <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-1">Bio</label>
-                <textarea value={editForm.bio} onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none"
-                  rows={3} placeholder="Tell people about yourself" maxLength={500} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-1">City</label>
-                  <input type="text" value={editForm.city} onChange={e => setEditForm({ ...editForm, city: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-navy-400 tracking-wider uppercase mb-1">College</label>
-                  <input type="text" value={editForm.college} onChange={e => setEditForm({ ...editForm, college: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-navy-100/30 rounded-xl text-sm text-navy-800 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500" />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => setEditing(false)}
-                  className="px-4 py-2 text-navy-500 border border-navy-100/30 rounded-xl text-sm hover:bg-navy-50 transition-colors">
-                  Cancel
-                </button>
-                <button onClick={saveProfile} disabled={saving}
-                  className="px-4 py-2 bg-navy-900 text-cream-50 rounded-xl text-sm hover:bg-navy-800 flex items-center gap-1 disabled:opacity-50 transition-all btn-press">
-                  {saving ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-cream-50" /> : <><Check size={14} /> Save</>}
-                </button>
-              </div>
+        {/* Avatar + Name row */}
+        <div className="flex items-center gap-4">
+          {/* Avatar upload */}
+          <label className="relative cursor-pointer shrink-0">
+            <div className="w-24 h-24 rounded-full border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] ring-4 ring-[#9A63E6] overflow-hidden bg-[#EAE4FB] flex items-center justify-center">
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="Your avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="font-display font-black text-3xl text-[#9A63E6]">{profile.name?.charAt(0) || '?'}</span>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+            {/* Upload overlay button */}
+            <div className="absolute bottom-0 right-0 w-8 h-8 bg-[#C5F030] border-3 border-[#1B1250] rounded-full flex items-center justify-center shadow-[2px_2px_0_#1B1250]">
+              {uploading ? (
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-[#1B1250]" />
+              ) : (
+                <Upload size={13} className="text-[#1B1250]" />
+              )}
+            </div>
+            <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+          </label>
 
-      {/* Verification */}
-      <div className="bg-white rounded-2xl shadow-soft p-5 mb-4">
-        <h3 className="text-xs font-semibold text-navy-500 tracking-wider uppercase mb-4 flex items-center gap-2">
-          <Shield size={14} /> Verification
-        </h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Mail size={16} className="text-navy-400" />
-              <div>
-                <p className="text-sm font-medium text-navy-800">Email</p>
-                <p className="text-xs text-navy-400">{profile.email}</p>
-              </div>
+          {/* Name + email */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="font-display font-black text-xl text-[#1B1250]">{profile.name}</h2>
+              {!editing && (
+                <button
+                  onClick={() => setEditing(true)}
+                  className="inline-flex items-center gap-1.5 bg-[#F6FBD4] text-[#1B1250] border-3 border-[#1B1250] shadow-[2px_3px_0_#1B1250] rounded-full font-black uppercase text-xs px-3 py-1.5 hover:bg-white active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                >
+                  <Edit2 size={11} />
+                  Edit
+                </button>
+              )}
             </div>
-            {profile.email_verified ? (
-              <span className="flex items-center gap-1 text-sage-600 text-xs font-medium">
-                <Check size={14} /> Verified
-              </span>
-            ) : (
-              <button className="px-3 py-1.5 bg-amber-500/10 text-amber-700 rounded-lg text-xs font-medium hover:bg-amber-500/20 transition-colors">
-                Verify
-              </button>
-            )}
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Phone size={16} className="text-navy-400" />
-              <div>
-                <p className="text-sm font-medium text-navy-800">Phone</p>
-                <p className="text-xs text-navy-400">{profile.phone || 'Not added'}</p>
-              </div>
-            </div>
-            {profile.phone_verified ? (
-              <span className="flex items-center gap-1 text-sage-600 text-xs font-medium">
-                <Check size={14} /> Verified
-              </span>
-            ) : (
-              <button className="px-3 py-1.5 bg-amber-500/10 text-amber-700 rounded-lg text-xs font-medium hover:bg-amber-500/20 transition-colors">
-                Verify
-              </button>
+            <p className="text-sm font-bold text-[#1B1250]/60 mt-0.5">{profile.email}</p>
+            {profile.college && (
+              <p className="text-xs font-black text-[#1B1250]/50 uppercase tracking-wide mt-1">{profile.college}</p>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Buddy Section - Always Buddy type now */}
-      <div className="bg-white rounded-2xl shadow-soft p-5 mb-4">
-        <h3 className="text-xs font-semibold text-navy-500 tracking-wider uppercase mb-4">Buddy</h3>
-        {buddyProfile ? (
-          <Link to="/buddy/manage" className="flex items-center justify-between p-3 bg-cream-50 rounded-xl hover:bg-cream-100 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                <span className="text-lg">🧑‍🤝‍🧑</span>
+        {/* ── Edit Form ── */}
+        {editing && (
+          <div className="mt-5 bg-[#EAE4FB] border-3 border-[#1B1250] rounded-[20px] p-5 space-y-4">
+            {/* Name */}
+            <div>
+              <label className="block text-xs font-black text-[#1B1250] uppercase tracking-widest mb-1.5">Name</label>
+              <input
+                type="text"
+                value={editForm.name}
+                onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none"
+              />
+            </div>
+            {/* Bio */}
+            <div>
+              <label className="block text-xs font-black text-[#1B1250] uppercase tracking-widest mb-1.5">Bio</label>
+              <textarea
+                value={editForm.bio}
+                onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
+                className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none resize-none"
+                rows={3}
+                placeholder="Tell people about yourself"
+                maxLength={500}
+              />
+            </div>
+            {/* City + College */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-black text-[#1B1250] uppercase tracking-widest mb-1.5">City</label>
+                <input
+                  type="text"
+                  value={editForm.city}
+                  onChange={e => setEditForm({ ...editForm, city: e.target.value })}
+                  className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none"
+                />
               </div>
               <div>
-                <p className="text-sm font-medium text-navy-800">My Buddy Profile</p>
-                <p className="text-xs text-navy-400">{buddyProfile.status === 'active' ? '🟢 Active' : '⚪ Paused'}</p>
+                <label className="block text-xs font-black text-[#1B1250] uppercase tracking-widest mb-1.5">College</label>
+                <input
+                  type="text"
+                  value={editForm.college}
+                  onChange={e => setEditForm({ ...editForm, college: e.target.value })}
+                  className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_3px_0_#1B1250] px-4 py-3.5 w-full focus:outline-none"
+                />
               </div>
             </div>
-            <ChevronRight size={16} className="text-navy-300" />
-          </Link>
-        ) : (
-          <Link to="/buddy/become" className="flex items-center justify-center gap-2 p-4 bg-cream-50 rounded-xl border-2 border-dashed border-navy-200 hover:border-amber-400 transition-colors">
-            <span className="text-sm font-medium text-navy-600">Become a Buddy</span>
-            <ChevronRight size={16} className="text-navy-400" />
-          </Link>
+            {/* Save / Cancel */}
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setEditing(false)}
+                className="flex-1 bg-[#F6FBD4] text-[#1B1250] border-3 border-[#1B1250] shadow-[3px_4px_0_#1B1250] rounded-full font-black uppercase text-sm px-4 py-3 active:translate-x-[2px] active:translate-y-[3px] active:shadow-none transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveProfile}
+                disabled={saving}
+                className="flex-1 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] rounded-full font-display font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1B1250]" />
+                ) : (
+                  <><Check size={15} /> Save</>
+                )}
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Account */}
-      <div className="bg-white rounded-2xl shadow-soft p-5 mb-4">
-        <h3 className="text-xs font-semibold text-navy-500 tracking-wider uppercase mb-4">Account</h3>
-        <div className="space-y-2">
-          {profile.city && (
-            <div className="flex items-center gap-3 p-3 rounded-xl">
-              <MapPin size={16} className="text-navy-400" />
+      {/* ── Verification Card ── */}
+      <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] p-5">
+        <h3 className="font-display font-black text-xs text-[#1B1250] uppercase tracking-widest flex items-center gap-2 mb-4">
+          <Shield size={13} className="text-[#9A63E6]" /> Verification
+        </h3>
+        <div className="space-y-3">
+          {/* Email */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#2FA3B5] border-2 border-[#1B1250] flex items-center justify-center">
+                <Mail size={15} className="text-white" />
+              </div>
               <div>
-                <p className="text-sm font-medium text-navy-800">{profile.city}</p>
-                <p className="text-xs text-navy-400">City</p>
+                <p className="text-sm font-black text-[#1B1250]">Email</p>
+                <p className="text-xs font-bold text-[#1B1250]/50">{profile.email}</p>
               </div>
             </div>
-          )}
-          {profile.college && (
-            <div className="flex items-center gap-3 p-3 rounded-xl">
-              <GraduationCap size={16} className="text-navy-400" />
+            {profile.email_verified ? (
+              <span className="inline-flex items-center gap-1 bg-[#C5F030] text-[#1B1250] border-2 border-[#1B1250] rounded-full px-3 py-1 text-xs font-black uppercase shadow-[2px_2px_0_#1B1250]">
+                <Check size={11} /> Verified
+              </span>
+            ) : (
+              <button className="bg-[#FFD41F] text-[#1B1250] border-2 border-[#1B1250] rounded-full px-3 py-1 text-xs font-black uppercase shadow-[2px_2px_0_#1B1250] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
+                Verify
+              </button>
+            )}
+          </div>
+          {/* Phone */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-[#E8622B] border-2 border-[#1B1250] flex items-center justify-center">
+                <Phone size={15} className="text-white" />
+              </div>
               <div>
-                <p className="text-sm font-medium text-navy-800">{profile.college}</p>
-                <p className="text-xs text-navy-400">College</p>
+                <p className="text-sm font-black text-[#1B1250]">Phone</p>
+                <p className="text-xs font-bold text-[#1B1250]/50">{profile.phone || 'Not added'}</p>
               </div>
             </div>
-          )}
+            {profile.phone_verified ? (
+              <span className="inline-flex items-center gap-1 bg-[#C5F030] text-[#1B1250] border-2 border-[#1B1250] rounded-full px-3 py-1 text-xs font-black uppercase shadow-[2px_2px_0_#1B1250]">
+                <Check size={11} /> Verified
+              </span>
+            ) : (
+              <button className="bg-[#FFD41F] text-[#1B1250] border-2 border-[#1B1250] rounded-full px-3 py-1 text-xs font-black uppercase shadow-[2px_2px_0_#1B1250] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">
+                Verify
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Legal Links */}
-      <div className="bg-white rounded-2xl shadow-soft p-5 mb-4">
-        <h3 className="text-xs font-semibold text-navy-500 tracking-wider uppercase mb-4">Legal</h3>
-        <div className="space-y-1">
-          <Link to="/privacy" className="flex items-center justify-between p-3 rounded-xl hover:bg-cream-50 transition-colors">
-            <span className="text-sm text-navy-700">Privacy Policy</span>
-            <ChevronRight size={16} className="text-navy-300" />
-          </Link>
-          <Link to="/terms" className="flex items-center justify-between p-3 rounded-xl hover:bg-cream-50 transition-colors">
-            <span className="text-sm text-navy-700">Terms of Service</span>
-            <ChevronRight size={16} className="text-navy-300" />
-          </Link>
-          <Link to="/community-guidelines" className="flex items-center justify-between p-3 rounded-xl hover:bg-cream-50 transition-colors">
-            <span className="text-sm text-navy-700">Community Guidelines</span>
-            <ChevronRight size={16} className="text-navy-300" />
-          </Link>
-          <Link to="/rental-guidelines" className="flex items-center justify-between p-3 rounded-xl hover:bg-cream-50 transition-colors">
-            <span className="text-sm text-navy-700">Rental Guidelines</span>
-            <ChevronRight size={16} className="text-navy-300" />
+      {/* ── Buddy Section ── */}
+      {buddyProfile ? (
+        <div className="bg-[#2FA3B5] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] p-5">
+          <h3 className="font-display font-black text-xs text-white uppercase tracking-widest mb-3">Buddy</h3>
+          <Link
+            to="/buddy/manage"
+            className="flex items-center justify-between bg-white/20 border-2 border-white/40 rounded-[20px] px-4 py-3.5 hover:bg-white/30 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-white border-2 border-[#1B1250] flex items-center justify-center">
+                <span className="text-base">🧑‍🤝‍🧑</span>
+              </div>
+              <div>
+                <p className="text-sm font-black text-white">My Buddy Profile</p>
+                <p className="text-xs font-bold text-white/70">{buddyProfile.status === 'active' ? '🟢 Active' : '⚪ Paused'}</p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-white/70" />
           </Link>
         </div>
+      ) : null}
+
+      {/* ── Settings Menu Rows ── */}
+      <div className="space-y-3">
+        {/* Manage Buddy Profile */}
+        <Link
+          to="/buddy/manage"
+          className="bg-[#F6FBD4] border-3 border-[#1B1250] shadow-[2px_3px_0_#1B1250] rounded-full px-5 py-3.5 flex items-center gap-3 hover:bg-white active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+        >
+          <div className="w-9 h-9 rounded-full bg-[#C5F030] border-2 border-[#1B1250] flex items-center justify-center shrink-0">
+            <UserPlus size={16} className="text-[#1B1250]" />
+          </div>
+          <span className="flex-1 text-sm font-black text-[#1B1250]">Manage Buddy Profile</span>
+          <ChevronRight size={18} className="text-[#1B1250]/60" />
+        </Link>
+
+        {/* Privacy & Safety */}
+        <Link
+          to="/privacy"
+          className="bg-[#F6FBD4] border-3 border-[#1B1250] shadow-[2px_3px_0_#1B1250] rounded-full px-5 py-3.5 flex items-center gap-3 hover:bg-white active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+        >
+          <div className="w-9 h-9 rounded-full bg-[#9A63E6] border-2 border-[#1B1250] flex items-center justify-center shrink-0">
+            <Shield size={16} className="text-white" />
+          </div>
+          <span className="flex-1 text-sm font-black text-[#1B1250]">Privacy &amp; Safety</span>
+          <ChevronRight size={18} className="text-[#1B1250]/60" />
+        </Link>
+
+        {/* Community Guidelines */}
+        <Link
+          to="/community-guidelines"
+          className="bg-[#F6FBD4] border-3 border-[#1B1250] shadow-[2px_3px_0_#1B1250] rounded-full px-5 py-3.5 flex items-center gap-3 hover:bg-white active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+        >
+          <div className="w-9 h-9 rounded-full bg-[#2FA3B5] border-2 border-[#1B1250] flex items-center justify-center shrink-0">
+            <BookOpen size={16} className="text-white" />
+          </div>
+          <span className="flex-1 text-sm font-black text-[#1B1250]">Community Guidelines</span>
+          <ChevronRight size={18} className="text-[#1B1250]/60" />
+        </Link>
+
+        {/* Rental Guidelines */}
+        <Link
+          to="/rental-guidelines"
+          className="bg-[#F6FBD4] border-3 border-[#1B1250] shadow-[2px_3px_0_#1B1250] rounded-full px-5 py-3.5 flex items-center gap-3 hover:bg-white active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+        >
+          <div className="w-9 h-9 rounded-full bg-[#FFD41F] border-2 border-[#1B1250] flex items-center justify-center shrink-0">
+            <Package size={16} className="text-[#1B1250]" />
+          </div>
+          <span className="flex-1 text-sm font-black text-[#1B1250]">Rental Guidelines</span>
+          <ChevronRight size={18} className="text-[#1B1250]/60" />
+        </Link>
+
+        {/* Terms of Service */}
+        <Link
+          to="/terms"
+          className="bg-[#F6FBD4] border-3 border-[#1B1250] shadow-[2px_3px_0_#1B1250] rounded-full px-5 py-3.5 flex items-center gap-3 hover:bg-white active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+        >
+          <div className="w-9 h-9 rounded-full bg-[#E8622B] border-2 border-[#1B1250] flex items-center justify-center shrink-0">
+            <FileText size={16} className="text-white" />
+          </div>
+          <span className="flex-1 text-sm font-black text-[#1B1250]">Terms of Service</span>
+          <ChevronRight size={18} className="text-[#1B1250]/60" />
+        </Link>
       </div>
 
-      {/* Logout */}
+      {/* ── Logout ── */}
       <button
         onClick={handleLogout}
-        className="w-full flex items-center justify-center gap-2 p-4 bg-coral-50 text-coral-600 rounded-2xl font-medium hover:bg-coral-100 transition-colors"
+        className="bg-[#E8622B] text-white border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] rounded-full font-display font-black uppercase px-6 py-3.5 w-full flex items-center justify-center gap-2 active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
       >
-        <LogOut size={18} /> Sign Out
+        <LogOut size={18} />
+        Sign Out
       </button>
     </div>
   );

@@ -1,25 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { getSocket } from '../lib/socket';
 import { BuddyProfile, BuddyRequest } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { Star, MapPin, CheckCircle, ArrowLeft, ChevronRight, UserPlus, Search, Send, MessageCircle } from 'lucide-react';
 import { ErrorState, FeedSkeleton } from '../components/ui/FeedbackStates';
+import { CandyBall } from '../components/neo/Decorations';
 
 const ACTIVITIES = [
-  { name: 'Coffee', emoji: '☕', bg: 'bg-amber-100' },
-  { name: 'Movies', emoji: '🎬', bg: 'bg-navy-100' },
-  { name: 'Walk', emoji: '🚶', bg: 'bg-sage-100' },
-  { name: 'Play', emoji: '🏸', bg: 'bg-coral-100' },
-  { name: 'College event', emoji: '🎓', bg: 'bg-navy-100' },
-  { name: 'Study', emoji: '📚', bg: 'bg-amber-100' },
-  { name: 'Explore', emoji: '🌄', bg: 'bg-sage-100' },
-  { name: 'Date', emoji: '❤️', bg: 'bg-rose-100' },
-];
-
-// Only Buddy type remains - no more boyfriend/girlfriend
-const BUDDY_TYPES = [
-  { id: 'buddy', label: 'Buddy', emoji: '🧑‍🤝‍🧑', desc: 'Hang out together', gradient: 'from-amber-500 to-orange-600' },
+  { name: 'Coffee', emoji: '☕', bg: 'bg-[#FFD41F]' },
+  { name: 'Movies', emoji: '🎬', bg: 'bg-[#B79BF0]' },
+  { name: 'Walk', emoji: '🚶', bg: 'bg-[#C5F030]' },
+  { name: 'Play', emoji: '🏸', bg: 'bg-[#E8622B]' },
+  { name: 'College event', emoji: '🎓', bg: 'bg-[#2FA3B5]' },
+  { name: 'Study', emoji: '📚', bg: 'bg-[#F6FBD4]' },
+  { name: 'Explore', emoji: '🌄', bg: 'bg-[#FF9A1F]' },
+  { name: 'Date', emoji: '❤️', bg: 'bg-[#FB7185]' },
 ];
 
 const SORT_OPTIONS = [
@@ -55,7 +52,9 @@ export default function BuddyPage() {
     } else {
       setUserLocation({ lat: 30.3165, lng: 78.0322 });
     }
-  }, []);  const fetchBuddies = async (buddyType?: string, activity?: string) => {
+  }, []);
+
+  const fetchBuddies = async (buddyType?: string, activity?: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -95,7 +94,6 @@ export default function BuddyPage() {
     return () => { cancelled = true; };
   }, [buddies, user]);
 
-  // Shared helper for buddy card + detail chat/request buttons
   const openBuddyChat = (buddyId: string, conversationId: string | null) => {
     if (conversationId) {
       navigate(`/messages?conv=${conversationId}`);
@@ -104,101 +102,26 @@ export default function BuddyPage() {
     }
   };
 
-  // Keep request statuses in sync with the current results list
+  // Real-time: new/updated buddy profiles
   useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-
-    const refreshFromApi = async () => {
-      if (cancelled) return;
-      const statusUpdates: Record<string, BuddyRequest | null> = {};
-      for (const buddy of buddies) {
-        if (buddy.user_id === user.id) continue;
-        try {
-          const statusRes = await api.get(`/buddy/${buddy.id}/request-status`, { params: { requesterId: user.id } });
-          statusUpdates[buddy.id] = statusRes.data.request || null;
-        } catch {
-          statusUpdates[buddy.id] = null;
+    let socket: ReturnType<typeof getSocket> | null = null;
+    try { socket = getSocket(); } catch { /* not signed in */ }
+    if (!socket) return;
+    const onBuddy = (buddy: BuddyProfile) => {
+      if (user && buddy.user_id === user.id) return;
+      setBuddies(prev => {
+        const idx = prev.findIndex(b => b.id === buddy.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = buddy;
+          return next;
         }
-      }
-      setBuddyRequestStatus(prev => ({ ...prev, ...statusUpdates }));
+        return [buddy, ...prev];
+      });
     };
-
-    refreshFromApi();
-    return () => { cancelled = true; };
-  }, [buddies, user]);
-
-  // Automatically refresh request statuses after the buddy list is populated and whenever it changes.
-  // This keeps the card labels (Send request / Request sent / Chat) up to date after a request is sent
-  // or accepted, including when the user returns from the buddy detail page.
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-
-    const refreshStatuses = async () => {
-      if (cancelled) return;
-      const statusUpdates: Record<string, BuddyRequest | null> = {};
-      for (const buddy of buddies) {
-        if (buddy.user_id === user.id) continue;
-        try {
-          const statusRes = await api.get(`/buddy/${buddy.id}/request-status`, { params: { requesterId: user.id } });
-          statusUpdates[buddy.id] = statusRes.data.request || null;
-        } catch {
-          statusUpdates[buddy.id] = null;
-        }
-      }
-      setBuddyRequestStatus(prev => ({ ...prev, ...statusUpdates }));
-    };
-
-    refreshStatuses();
-    return () => { cancelled = true; };
-  }, [buddies, user]);
-
-  // After coming back from a buddy detail page, give the UI a moment to settle before re-checking statuses,
-  // so a newly sent or accepted request shows the updated label on the card.
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-
-    const afterNavigationRefresh = async () => {
-      // Let BuddyPage finish its re-render after the route change before we mutate card labels
-      await new Promise(resolve => setTimeout(resolve, 450));
-      if (cancelled) return;
-      const statusUpdates: Record<string, BuddyRequest | null> = {};
-      for (const buddy of buddies) {
-        if (buddy.user_id === user.id) continue;
-        try {
-          const statusRes = await api.get(`/buddy/${buddy.id}/request-status`, { params: { requesterId: user.id } });
-          statusUpdates[buddy.id] = statusRes.data.request || null;
-        } catch {
-          statusUpdates[buddy.id] = null;
-        }
-      }
-      setBuddyRequestStatus(prev => ({ ...prev, ...statusUpdates }));
-    };
-
-    afterNavigationRefresh();
-    return () => { cancelled = true; };
-  }, [buddies, user]);
-
-  useEffect(() => {
-    if (!user) return;
-    const mounted = true;
-    (async () => {
-      const statusUpdates: Record<string, BuddyRequest | null> = {};
-      for (const buddy of buddies) {
-        if (buddy.user_id === user.id) continue;
-        try {
-          const statusRes = await api.get(`/buddy/${buddy.id}/request-status`, { params: { requesterId: user.id } });
-          statusUpdates[buddy.id] = statusRes.data.request || null;
-        } catch {
-          statusUpdates[buddy.id] = null;
-        }
-      }
-      if (mounted) setBuddyRequestStatus(prev => ({ ...prev, ...statusUpdates }));
-    })();
-    return () => { /* no-op */ };
-  }, [buddies, user]);
+    socket.on('buddy_updated', onBuddy);
+    return () => { socket?.off('buddy_updated', onBuddy); };
+  }, [user]);
 
   useEffect(() => {
     if (view === 'results') {
@@ -210,13 +133,6 @@ export default function BuddyPage() {
     setView('find');
     setSelectedActivity(null);
     setSearchParams({});
-  };
-
-  const handleTypeSelect = (typeId: string) => {
-    setSelectedType(typeId);
-    setSelectedActivity(null);
-    setView('results');
-    // No query param needed since only 'buddy' exists
   };
 
   const handleActivitySelect = (activity: string) => {
@@ -238,88 +154,131 @@ export default function BuddyPage() {
   };
 
   return (
-    <div className="pb-24">
+    <div className="w-full relative pb-16">
       {/* Back button */}
       {view !== 'home' && (
-        <button onClick={handleBack} className="flex items-center gap-2 text-navy-400 hover:text-navy-600 text-sm font-medium mb-6 transition-colors">
-          <ArrowLeft size={16} /> Back
+        <button
+          onClick={handleBack}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#F6FBD4] hover:bg-white text-[#1B1250] border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] rounded-full text-xs font-black mb-5 transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+        >
+          <ArrowLeft size={16} strokeWidth={2.5} /> Back
         </button>
       )}
 
-      {/* HOME VIEW — Two primary actions */}
+      {/* HOME VIEW — Two Primary Actions on a Vibrant Purple Background */}
       {view === 'home' && (
-        <div className="space-y-6">
-          {/* Hero */}
-          <div className="mb-2">
-            <h1 className="font-display text-[2.5rem] leading-[1.1] text-navy-900 mb-3">
-              What do you<br />want to do?
-            </h1>
-            <p className="text-navy-400 text-base">
-              Find someone nearby or offer your time.
-            </p>
-          </div>
+        <div className="relative">
+          {/* Purple Background Hero Container */}
+          <div className="relative bg-[#9A63E6] border-3 border-[#1B1250] rounded-[32px] shadow-[8px_10px_0_#1B1250] p-6 sm:p-8 overflow-hidden">
+            {/* 3-4 Floating Candy Balls */}
+            <div className="absolute -top-3 -right-3 pointer-events-none z-10 opacity-90">
+              <CandyBall color="yellow" size={68} float />
+            </div>
+            <div className="absolute top-1/3 -left-4 pointer-events-none z-10 opacity-80">
+              <CandyBall color="teal" size={54} float reverse />
+            </div>
+            <div className="absolute -bottom-4 right-1/4 pointer-events-none z-10 opacity-85">
+              <CandyBall color="orange" size={60} float />
+            </div>
+            <div className="absolute bottom-10 -right-4 pointer-events-none z-10 opacity-75">
+              <CandyBall color="lime" size={48} float reverse />
+            </div>
 
-          {/* Two Primary Actions */}
-          <div className="space-y-3">
-            {/* Find a Buddy */}
-            <button
-              onClick={handleFindBuddy}
-              className="w-full bg-navy-900 text-cream-50 rounded-3xl p-6 text-left card-hover btn-press transition-all"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center">
-                  <Search size={24} className="text-amber-400" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="font-display text-xl text-cream-50">Find a Buddy</h2>
-                  <p className="text-cream-50/60 text-sm mt-0.5">Discover people nearby to hang out with</p>
-                </div>
-                <ChevronRight size={20} className="text-cream-50/40" />
-              </div>
-            </button>
+            {/* Heading & Subtitle */}
+            <div className="mb-8 relative z-20">
+              <h1
+                className="font-display font-black text-3xl sm:text-4xl text-white tracking-tight leading-[1.08] mb-3"
+                style={{ textShadow: '2px 2px 0 #1B1250' }}
+              >
+                What do you <br />
+                <span className="inline-block bg-[#FFD41F] text-[#1B1250] border-2.5 border-[#1B1250] shadow-[2px_3px_0_#1B1250] px-3 py-0.5 rounded-[10px] -rotate-1">
+                  want to do?
+                </span>
+              </h1>
+              <p className="text-white/95 font-bold text-sm sm:text-base tracking-wide" style={{ textShadow: '1px 1px 0 rgba(27,18,80,0.5)' }}>
+                Find someone nearby or offer your time.
+              </p>
+            </div>
 
-            {/* Become a Buddy */}
-            <Link
-              to="/buddy/become"
-              className="block bg-white border-2 border-amber-400/30 rounded-3xl p-6 text-left card-hover btn-press transition-all"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center">
-                  <UserPlus size={24} className="text-amber-600" />
+            {/* Two Chunky Sticker Option Cards */}
+            <div className="space-y-5 relative z-20">
+              {/* Option 1: Find a Buddy (Lime/Yellow Sticker Card, tilted -2°, squishes on tap) */}
+              <button
+                type="button"
+                onClick={handleFindBuddy}
+                className="w-full bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] rounded-[26px] p-5 sm:p-6 text-left shadow-[6px_8px_0_#1B1250] -rotate-2 hover:rotate-0 transition-all duration-200 select-none cursor-pointer active:translate-x-[3px] active:translate-y-[4px] active:shadow-[1px_1px_0_#1B1250] active:scale-[0.98] group"
+              >
+                <div className="flex items-center gap-4">
+                  {/* Big Icon Box on Left */}
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white border-2.5 border-[#1B1250] rounded-[20px] shadow-[2px_2px_0_#1B1250] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Search size={28} strokeWidth={3} className="text-[#1B1250]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-display font-black text-xl sm:text-2xl text-[#1B1250] tracking-tight">
+                      Find a Buddy
+                    </h2>
+                    <p className="text-xs sm:text-sm font-bold text-[#1B1250]/80 mt-1 leading-snug">
+                      Discover people nearby to hang out with
+                    </p>
+                  </div>
+                  {/* Chevron Button */}
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] flex items-center justify-center shrink-0">
+                    <ChevronRight size={22} strokeWidth={3} className="text-[#1B1250]" />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h2 className="font-display text-xl text-navy-900">Become a Buddy</h2>
-                  <p className="text-navy-400 text-sm mt-0.5">Let others find and request you</p>
+              </button>
+
+              {/* Option 2: Become a Buddy (Cream Sticker Card, tilted +2°, squishes on tap) */}
+              <Link
+                to="/buddy/become"
+                className="block w-full bg-[#F6FBD4] text-[#1B1250] border-3 border-[#1B1250] rounded-[26px] p-5 sm:p-6 text-left shadow-[6px_8px_0_#1B1250] rotate-2 hover:rotate-0 transition-all duration-200 select-none cursor-pointer active:translate-x-[3px] active:translate-y-[4px] active:shadow-[1px_1px_0_#1B1250] active:scale-[0.98] group"
+              >
+                <div className="flex items-center gap-4">
+                  {/* Big Icon Box on Left */}
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#FFD41F] border-2.5 border-[#1B1250] rounded-[20px] shadow-[2px_2px_0_#1B1250] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <UserPlus size={28} strokeWidth={3} className="text-[#1B1250]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-display font-black text-xl sm:text-2xl text-[#1B1250] tracking-tight">
+                      Become a Buddy
+                    </h2>
+                    <p className="text-xs sm:text-sm font-bold text-[#1B1250]/80 mt-1 leading-snug">
+                      Let others find and request you
+                    </p>
+                  </div>
+                  {/* Chevron Button */}
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#C5F030] border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] flex items-center justify-center shrink-0">
+                    <ChevronRight size={22} strokeWidth={3} className="text-[#1B1250]" />
+                  </div>
                 </div>
-                <ChevronRight size={20} className="text-navy-300" />
-              </div>
-            </Link>
+              </Link>
+            </div>
           </div>
         </div>
       )}
 
-      {/* FIND VIEW — Activity selection only (no type filtering needed) */}
+      {/* FIND VIEW — Activity selection */}
       {view === 'find' && (
-        <div className="space-y-6">
-          <div>
-            <h2 className="font-display text-2xl text-navy-900 mb-1">Find a Buddy</h2>
-            <p className="text-sm text-navy-400">What do you want to do together?</p>
+        <div className="space-y-5">
+          {/* Heading card */}
+          <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[24px] shadow-[4px_6px_0_#1B1250] p-5">
+            <h2 className="font-display font-black text-2xl text-[#1B1250] tracking-tight">Find a Buddy</h2>
+            <p className="text-xs font-bold text-[#1B1250]/70 mt-1">What do you want to do together?</p>
           </div>
 
-          {/* Activities */}
-          <div>
-            <div className="grid grid-cols-2 gap-3">
-              {ACTIVITIES.map(act => (
-                <button
-                  key={act.name}
-                  onClick={() => handleActivitySelect(act.name)}
-                  className={`${act.bg} rounded-2xl p-4 text-left card-hover btn-press transition-all`}
-                >
-                  <span className="text-2xl block mb-2">{act.emoji}</span>
-                  <span className="font-medium text-navy-800 text-sm">{act.name}</span>
-                </button>
-              ))}
-            </div>
+          {/* Activity grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {ACTIVITIES.map(act => (
+              <button
+                key={act.name}
+                type="button"
+                onClick={() => handleActivitySelect(act.name)}
+                className={`${act.bg} border-3 border-[#1B1250] rounded-[22px] p-4 text-left shadow-[3px_4px_0_#1B1250] hover:shadow-[5px_6px_0_#1B1250] transition-all active:translate-x-[2px] active:translate-y-[3px] active:shadow-[1px_1px_0_#1B1250] group`}
+              >
+                <span className="text-3xl block mb-2 group-hover:scale-110 transition-transform">{act.emoji}</span>
+                <span className="font-black text-xs text-[#1B1250] uppercase tracking-wide">{act.name}</span>
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -327,138 +286,165 @@ export default function BuddyPage() {
       {/* RESULTS VIEW — Buddy cards */}
       {view === 'results' && (
         <div>
-          <div className="mb-4">              <h2 className="font-display text-2xl text-navy-900">
-              {selectedActivity || 'Buddies nearby'}
-            </h2>
-            <p className="text-sm text-navy-400 mt-1">
-              {loading ? 'Searching...' : error ? '' : `${buddies.length} people nearby`}
-            </p>
-          </div>
+          {/* Header card */}
+          <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[24px] shadow-[4px_6px_0_#1B1250] p-4 mb-4 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="font-display font-black text-xl text-[#1B1250] truncate">
+                {selectedActivity || 'Buddies nearby'}
+              </h2>
+              <p className="text-xs font-bold text-[#1B1250]/70 mt-0.5">
+                {loading ? 'Searching…' : error ? '' : `${buddies.length} people nearby`}
+              </p>
+            </div>
 
-          {/* Sort dropdown */}
-          {!loading && !error && buddies.length > 0 && (
-            <div className="flex justify-end mb-4">
-              <select value={sort} onChange={e => setSort(e.target.value)}
-                className="text-xs bg-white border border-navy-100/30 rounded-xl px-3 py-1.5 text-navy-500 focus:ring-2 focus:ring-amber-500/30">
+            {!loading && !error && buddies.length > 0 && (
+              <select
+                value={sort}
+                onChange={e => setSort(e.target.value)}
+                className="shrink-0 text-xs font-black bg-[#F6FBD4] border-2 border-[#1B1250] rounded-full px-3 py-1.5 text-[#1B1250] shadow-[2px_2px_0_#1B1250] outline-none cursor-pointer"
+              >
                 {SORT_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
-            </div>
-          )}
+            )}
+          </div>
 
           {loading ? (
-            <FeedSkeleton count={3} />
+            /* Skeleton cards */
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <div
+                  key={i}
+                  className="bg-[#F6FBD4] border-2 border-dashed border-[#1B1250] rounded-[24px] h-32 animate-pulse"
+                />
+              ))}
+            </div>
           ) : error ? (
             <ErrorState message={error} onRetry={() => fetchBuddies(undefined, selectedActivity || undefined)} />
           ) : buddies.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 bg-cream-200 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl">👥</span>
+            /* Empty state */
+            <div className="text-center py-14 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] p-8 -rotate-1">
+              <div className="w-16 h-16 rounded-full bg-[#C5F030] border-3 border-[#1B1250] shadow-[3px_3px_0_#1B1250] flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">👥</span>
               </div>
-              <p className="font-display text-lg text-navy-800 mb-2">No one found</p>
-              <p className="text-sm text-navy-400 mb-6">Try a different filter or check back later</p>
-              <button onClick={handleBack} className="bg-navy-900 text-cream-50 px-6 py-3 rounded-2xl font-medium hover:bg-navy-800 transition-all btn-press text-sm">
+              <p className="font-display font-black text-2xl text-[#1B1250] mb-2">No one found</p>
+              <p className="text-xs font-bold text-[#1B1250]/70 mb-5">Try a different filter or check back later</p>
+              <button
+                type="button"
+                onClick={handleBack}
+                className="bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-[3px_4px_0_#1B1250] px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-wider active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+              >
                 Browse All
               </button>
             </div>
           ) : (
             <div className="space-y-4">
-              {buddies.map(buddy => (
-                <Link
-                  key={buddy.id}
-                  to={`/buddy/${buddy.id}`}
-                  className="block bg-white rounded-3xl p-5 shadow-soft card-hover transition-all"
-                >
-                  <div className="flex gap-4">
-                    {/* Avatar */}
-                    {buddy.image_urls?.[0] ? (
-                      <img src={buddy.image_urls[0]} alt={`${buddy.name}'s profile`} loading="lazy" className="w-20 h-20 rounded-2xl object-cover flex-shrink-0" />
-                    ) : (
-                      <div className="w-20 h-20 bg-navy-900 rounded-2xl flex items-center justify-center flex-shrink-0">
-                        <span className="text-cream-50 font-bold text-2xl">{buddy.name?.charAt(0)}</span>
-                      </div>
-                    )}
+              {buddies.map((buddy, index) => {
+                const rotation = index % 2 === 0 ? '-rotate-1 hover:rotate-0' : 'rotate-1 hover:rotate-0';
+                // Alternating avatar ring colour: orange for even, teal for odd
+                const ringColor = index % 2 === 0 ? 'ring-[#E8622B]' : 'ring-[#2FA3B5]';
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-navy-900">{buddy.name}</h3>
-                            <span className="text-navy-400">·</span>
-                            <span className="text-navy-500 text-sm">{buddy.date_of_birth ? Math.floor((Date.now() - new Date(buddy.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : ''}</span>
-                          </div>
-                          <p className="text-sm text-navy-400 mt-0.5 line-clamp-1 italic">"{buddy.title}"</p>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold text-navy-900">₹{buddy.price_per_hour}</span>
-                          <span className="text-xs text-navy-400">/session</span>
-                        </div>
-                      </div>
-
-                      {/* Activities */}
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {buddy.activities?.slice(0, 3).map(act => (
-                          <span key={act} className="px-2 py-0.5 bg-cream-100 rounded-full text-xs font-medium text-navy-600">{act}</span>
-                        ))}
-                        {buddy.activities && buddy.activities.length > 3 && (
-                          <span className="px-2 py-0.5 bg-cream-100 rounded-full text-xs text-navy-400">+{buddy.activities.length - 3}</span>
+                return (
+                  <Link
+                    key={buddy.id}
+                    to={`/buddy/${buddy.id}`}
+                    className={`block bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[24px] p-5 shadow-[4px_6px_0_#1B1250] hover:shadow-[6px_8px_0_#1B1250] transition-all duration-200 ${rotation}`}
+                  >
+                    <div className="flex gap-4">
+                      {/* Avatar in sticker frame */}
+                      <div className={`w-16 h-16 rounded-[20px] bg-[#F6FBD4] border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] flex items-center justify-center shrink-0 overflow-hidden ring-2 ${ringColor}`}>
+                        {buddy.image_urls?.[0] ? (
+                          <img src={buddy.image_urls[0]} alt={`${buddy.name}'s profile`} loading="lazy" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[#1B1250] font-black text-2xl">{buddy.name?.charAt(0)?.toUpperCase()}</span>
                         )}
                       </div>
 
-                      {/* Stats */}
-                      <div className="flex items-center gap-3 mt-2 text-xs text-navy-400">
-                        <span className="flex items-center gap-1">
-                          <Star size={12} className="text-amber-500 fill-amber-500" />
-                          <span className="font-medium">{buddy.avg_rating ? Number(buddy.avg_rating).toFixed(1) : 'New'}</span>
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <CheckCircle size={12} className="text-sage-500" />
-                          {buddy.total_sessions} sessions
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin size={12} />
-                          {buddy.location_name || 'Dehradun'}
-                        </span>
-                      </div>
+                      <div className="flex-1 min-w-0">
+                        {/* Name + age + price */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="font-display font-black text-base text-[#1B1250]">{buddy.name}</h3>
+                              <span className="text-xs font-bold text-[#1B1250]/40">·</span>
+                              <span className="text-xs font-bold text-[#1B1250]/70">
+                                {buddy.date_of_birth ? Math.floor((Date.now() - new Date(buddy.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : ''}
+                              </span>
+                            </div>
+                            {/* Tagline */}
+                            <p className="text-xs font-semibold text-[#1B1250]/80 mt-0.5 line-clamp-1 italic">"{buddy.title}"</p>
+                          </div>
+                          {/* Price pill */}
+                          <span className="shrink-0 inline-flex items-center gap-0.5 bg-[#FFD41F] border-2 border-[#1B1250] rounded-full px-2.5 py-0.5 font-black text-[11px] text-[#1B1250]">
+                            ₹{buddy.price_per_hour}<span className="text-[9px] font-black text-[#1B1250]/60 ml-0.5">/session</span>
+                          </span>
+                        </div>
 
-                      {/* Request status / action */}
-                      {user?.id !== buddy.user_id && (
-                        <div className="mt-3 flex items-center gap-2">
-                          {(() => {
-                            const request = buddyRequestStatus[buddy.id] || null;
-                            if (request?.status === 'accepted') {
+                        {/* Activities */}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {buddy.activities?.slice(0, 3).map(act => (
+                            <span key={act} className="px-2.5 py-0.5 bg-[#C5F030] border-2 border-[#1B1250] shadow-[1px_1px_0_#1B1250] rounded-full text-[10px] font-black text-[#1B1250]">{act}</span>
+                          ))}
+                          {buddy.activities && buddy.activities.length > 3 && (
+                            <span className="px-2 py-0.5 bg-[#F6FBD4] border-2 border-[#1B1250] rounded-full text-[10px] font-black text-[#1B1250]/60">+{buddy.activities.length - 3}</span>
+                          )}
+                        </div>
+
+                        {/* Stats row */}
+                        <div className="flex items-center gap-3 mt-2 text-[11px] font-bold text-[#1B1250]/70">
+                          <span className="flex items-center gap-1">
+                            <Star size={12} className="text-[#FFD41F] fill-[#FFD41F]" />
+                            <span className="font-black text-[#1B1250]">{buddy.avg_rating ? Number(buddy.avg_rating).toFixed(1) : 'New'}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <CheckCircle size={12} className="text-[#3F8A12]" />
+                            {buddy.total_sessions} sessions
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MapPin size={11} className="text-[#E8622B]" />
+                            {buddy.location_name || 'Dehradun'}
+                          </span>
+                        </div>
+
+                        {/* Action buttons */}
+                        {user?.id !== buddy.user_id && (
+                          <div className="mt-3 flex items-center gap-2">
+                            {(() => {
+                              const request = buddyRequestStatus[buddy.id] || null;
+                              if (request?.status === 'accepted') {
+                                return (
+                                  <button
+                                    onClick={e => { e.preventDefault(); openBuddyChat(buddy.id, request.conversation_id ?? null); }}
+                                    className="inline-flex items-center gap-1.5 text-xs font-black bg-[#C5F030] text-[#1B1250] border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] px-3.5 py-1 rounded-full active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                                  >
+                                    <MessageCircle size={13} strokeWidth={2.5} /> Chat
+                                  </button>
+                                );
+                              }
+                              if (request) {
+                                return (
+                                  <span className="inline-flex items-center gap-1.5 text-xs font-black bg-[#FFD41F] text-[#1B1250] border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] px-3 py-1 rounded-full">
+                                    <Send size={12} strokeWidth={2.5} /> Request sent
+                                  </span>
+                                );
+                              }
                               return (
                                 <button
-                                  onClick={e => { e.preventDefault(); openBuddyChat(buddy.id, request.conversation_id ?? null); }}
-                                  className="inline-flex items-center gap-1.5 text-xs font-medium bg-sage-600 text-white px-3 py-1.5 rounded-full hover:bg-sage-700 transition-colors"
+                                  onClick={e => { e.preventDefault(); openBuddyChat(buddy.id, null); }}
+                                  className="inline-flex items-center gap-1.5 text-xs font-black bg-[#C5F030] hover:bg-[#bcf01a] text-[#1B1250] border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] px-3.5 py-1 rounded-full active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                                 >
-                                  <MessageCircle size={12} /> Chat
+                                  <Send size={12} strokeWidth={2.5} /> Send request
                                 </button>
                               );
-                            }
-                            if (request) {
-                              return (
-                                <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-amber-100 text-amber-800 px-3 py-1.5 rounded-full">
-                                  <Send size={12} /> Request sent
-                                </span>
-                              );
-                            }
-                            return (
-                              <button
-                                onClick={e => { e.preventDefault(); openBuddyChat(buddy.id, null); }}
-                                className="inline-flex items-center gap-1.5 text-xs font-medium bg-navy-900 text-cream-50 px-3 py-1.5 rounded-full hover:bg-navy-800 transition-colors"
-                              >
-                                <Send size={12} /> Send request
-                              </button>
-                            );
-                          })()}
-                        </div>
-                      )}
+                            })()}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>

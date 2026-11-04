@@ -1,4 +1,5 @@
 import { query } from '../../lib/db';
+import { emitToAll } from '../../lib/realtime';
 import { AppError } from '../../middleware/errorHandler';
 import { CreatePostInput, FeedQuery } from './validators';
 
@@ -14,10 +15,22 @@ export async function createPost(userId: string, data: CreatePostInput) {
   const result = await query(
     `INSERT INTO social_posts (user_id, category, title, content, image_urls, location_lat, location_lng, location_name)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-     RETURNING id`,
-    [userId, data.category, data.title || null, data.content, data.imageUrls || [], data.locationLat || null, data.locationLng || null, data.locationName || null]
+     RETURNING id`,     [userId, data.category, data.title || null, data.content, data.imageUrls || [], data.locationLat || null, data.locationLng || null, data.locationName || null]
   );
-  return getPostById(result.rows[0].id, userId);
+  const post = await getPostById(result.rows[0].id, userId);
+
+  // Broadcast the new post so open home feeds prepend it live (no reload).
+  // Include the plan/participant fields that getFeed adds, so the card renders
+  // identically to one fetched from the list.
+  emitToAll('feed_post', {
+    ...post,
+    participants_count: 0,
+    max_participants: parseMaxParticipants(post.content as string),
+    is_participant: false,
+    has_pending_request: false,
+  });
+
+  return post;
 }
 
 export async function getFeed(userId: string, params: FeedQuery) {
