@@ -16,7 +16,7 @@ A hyper-local social marketplace and community platform for **Dehradun, Uttarakh
 - **🔒 Privacy** — Location privacy, anonymous posting, safety features
 
 ## Tech Stack
-
+jz
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React, TypeScript, Tailwind CSS, Leaflet |
