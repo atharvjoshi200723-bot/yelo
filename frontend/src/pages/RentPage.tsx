@@ -6,7 +6,15 @@ import { useAuth } from '../context/AuthContext';
 import { RentalListing } from '../types';
 import { Search, Plus, MapPin, Package, ChevronDown } from 'lucide-react';
 import { ErrorState, EmptyState, GridSkeleton } from '../components/ui/FeedbackStates';
-import { CandyBall } from '../components/neo/Decorations';
+import {
+  CandyBall,
+  WavyHighlight,
+  DoodleStar,
+  DoodleSquiggle,
+  HandwrittenNote,
+  Mascot,
+  ChaiCupSticker,
+} from '../components/neo/Decorations';
 
 interface Category { id: string; name: string; icon: string; slug: string; }
 
@@ -111,15 +119,24 @@ export default function RentPage() {
         </div>
 
         {/* Heading */}
-        <h1
-          className="font-display font-black text-3xl sm:text-4xl text-white tracking-tight leading-[1.08] mb-4 relative z-10"
-          style={{ textShadow: '2px 2px 0 #1B1250' }}
-        >
-          What do you <br />
-          <span className="inline-block bg-[#FFD41F] text-[#1B1250] border-2.5 border-[#1B1250] shadow-[2px_3px_0_#1B1250] px-3 py-0.5 rounded-[10px] -rotate-1">
-            need today?
-          </span>
-        </h1>
+        <div className="flex items-start justify-between relative z-10 mb-4">
+          <h1
+            className="font-display font-black text-3xl sm:text-4xl text-white tracking-tight leading-[1.08]"
+            style={{ textShadow: '2px 2px 0 #1B1250' }}
+          >
+            What do you <br />
+            <span className="inline-flex items-center gap-2 mt-1">
+              <WavyHighlight>need today?</WavyHighlight>
+              <DoodleStar color="yellow" size={24} rotate={15} />
+            </span>
+          </h1>
+          <div className="hidden xs:flex flex-col items-end pt-1">
+            <HandwrittenNote rotate={-3} className="text-[#FFD41F] drop-shadow-[1px_1px_0_#1B1250]">
+              rent & save ₹
+            </HandwrittenNote>
+            <DoodleSquiggle color="#FFD41F" width={48} height={12} className="mt-0.5" />
+          </div>
+        </div>
 
         {/* Big Cream Search Bar with Navy Border & Hard Shadow */}
         <div className="relative z-10 mb-3">
@@ -258,12 +275,13 @@ export default function RentPage() {
           {listings.map((listing, i) => {
             const isLarge = i % 5 === 0;
             const rotation = i % 2 === 0 ? '-rotate-1 hover:rotate-0' : 'rotate-1 hover:rotate-0';
+            const staggerClass = `stagger-${Math.min((i % 5) + 1, 5)}`;
 
             return (
               <Link
                 key={listing.id}
                 to={`/rent/${listing.id}`}
-                className={`bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[24px] shadow-[4px_6px_0_#1B1250] hover:shadow-[6px_8px_0_#1B1250] overflow-hidden transition-all duration-200 group relative flex flex-col ${rotation} ${
+                className={`bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[24px] shadow-[4px_6px_0_#1B1250] hover:shadow-[6px_8px_0_#1B1250] overflow-hidden transition-all duration-200 group relative flex flex-col animate-sticker-slap ${staggerClass} ${rotation} ${
                   isLarge ? 'col-span-2' : ''
                 }`}
               >

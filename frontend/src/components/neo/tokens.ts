@@ -14,12 +14,20 @@ export const NEO_TOKENS = {
     orange: '#E8622B',      // accents, badges, candy ball
     teal: '#2FA3B5',        // accents, badges, candy ball
     yellow: '#FFD41F',      // title marker-highlight, stickers, candy ball
+    pink: '#FF5C8A',        // likes/hearts, notification dots, live signal, badges
     approve: '#3F8A12',     // success/confirmed status
     deny: '#FF9A1F',        // alert/action warning
     navy: '#1B1250',        // ALL text, outlines, and hard shadows
     white: '#FFFFFF',       // floating notification cards only
     disabledLime: '#D8EDB0',
     disabledNavy: 'rgba(27, 18, 80, 0.4)',
+    tabs: {
+      home: '#FF5C8A',     // pink
+      rent: '#E8622B',     // orange
+      buddy: '#9A63E6',    // purple
+      forums: '#2FA3B5',   // teal
+      messages: '#FFD41F', // yellow
+    },
   },
   borders: {
     navy3: '3px solid #1B1250',
@@ -43,6 +51,7 @@ export const NEO_TOKENS = {
   typography: {
     headline: '"Rubik", "Bricolage Grotesque", -apple-system, sans-serif',
     body: '"Plus Jakarta Sans", -apple-system, sans-serif',
+    handwritten: '"Caveat Brush", cursive',
     letterSpacingHeadline: '-0.03em',
     lineHeightHeadline: '1',
   },

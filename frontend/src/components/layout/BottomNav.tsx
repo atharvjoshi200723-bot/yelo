@@ -2,11 +2,11 @@ import { NavLink } from 'react-router-dom';
 import { Home, ShoppingBag, Users, MessageSquare, MessageCircle } from 'lucide-react';
 
 const navItems = [
-  { path: '/', label: 'Home', icon: Home },
-  { path: '/rent', label: 'Rent', icon: ShoppingBag },
-  { path: '/buddy', label: 'Buddy', icon: Users },
-  { path: '/forums', label: 'Forums', icon: MessageSquare },
-  { path: '/messages', label: 'Messages', icon: MessageCircle },
+  { path: '/', label: 'Home', icon: Home, accent: '#FF5C8A' },          // Home = pink
+  { path: '/rent', label: 'Rent', icon: ShoppingBag, accent: '#E8622B' }, // Rent = orange
+  { path: '/buddy', label: 'Buddy', icon: Users, accent: '#9A63E6' },     // Buddy = purple
+  { path: '/forums', label: 'Forums', icon: MessageSquare, accent: '#2FA3B5' }, // Forums = teal
+  { path: '/messages', label: 'Messages', icon: MessageCircle, accent: '#FFD41F' }, // Messages = yellow
 ];
 
 export default function BottomNav() {
@@ -26,22 +26,31 @@ export default function BottomNav() {
               className="flex items-center justify-center select-none"
             >
               {({ isActive }) => (
-                <div
-                  className={`flex items-center gap-1.5 py-1.5 transition-all duration-200 ${
-                    isActive
-                      ? 'bg-[#C5F030] text-[#1B1250] border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] px-3.5 rounded-full'
-                      : 'text-[#1B1250] px-2.5 hover:opacity-80 active:scale-95'
-                  }`}
-                >
-                  <item.icon
-                    size={20}
-                    strokeWidth={2.5}
-                    className="shrink-0 text-[#1B1250]"
-                  />
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`flex items-center gap-1.5 py-1.5 transition-all duration-200 ${
+                      isActive
+                        ? 'bg-[#C5F030] text-[#1B1250] border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] px-3.5 rounded-full'
+                        : 'text-[#1B1250] px-2.5 hover:opacity-80 active:scale-95'
+                    }`}
+                  >
+                    <item.icon
+                      size={20}
+                      strokeWidth={2.5}
+                      className="shrink-0 text-[#1B1250]"
+                    />
+                    {isActive && (
+                      <span className="text-xs font-black tracking-tight text-[#1B1250]">
+                        {item.label}
+                      </span>
+                    )}
+                  </div>
+                  {/* Small accent underneath active tab: Home=pink, Rent=orange, Buddy=purple, Forums=teal, Messages=yellow */}
                   {isActive && (
-                    <span className="text-xs font-black tracking-tight text-[#1B1250]">
-                      {item.label}
-                    </span>
+                    <span
+                      className="w-5 h-1 rounded-full border border-[#1B1250] mt-0.5 animate-pop-in"
+                      style={{ backgroundColor: item.accent }}
+                    />
                   )}
                 </div>
               )}

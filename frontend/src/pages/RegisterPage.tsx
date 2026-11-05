@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getGoogleSignInUrl, googleRedirectUrl, googleErrorMessage } from '../lib/googleAuth';
+import { Mascot, DoodleStar } from '../components/neo/Decorations';
 const SAFETY_RULES = [
   'Meet publicly and keep personal details private until you trust someone',
   'No harassment, hate speech, or inappropriate behavior on YELO',
@@ -104,11 +105,15 @@ export default function RegisterPage() {
 
       <div className="w-full max-w-md relative z-10 py-8">
         {/* YELO wordmark */}
-        <div className="text-center mb-6">
-          <div className="inline-block bg-[#1B1250] rounded-[20px] border-3 border-[#1B1250] shadow-neo px-7 py-3 mb-4">
+        <div className="text-center mb-6 relative">
+          <div className="inline-flex items-center gap-2 bg-[#1B1250] rounded-[20px] border-3 border-[#1B1250] shadow-neo px-7 py-3 mb-3 relative">
             <span className="font-display font-black text-5xl text-[#C5F030] tracking-tight">YELO</span>
+            <DoodleStar color="pink" size={26} rotate={15} className="absolute -top-3 -right-3" />
           </div>
-          <p className="text-white font-bold text-sm opacity-80">Join your hyperlocal community</p>
+          <div className="flex items-center justify-center gap-2">
+            <Mascot size={32} mood="happy" waving />
+            <p className="text-white font-bold text-sm opacity-90">Join your hyperlocal community</p>
+          </div>
         </div>
 
         {/* Cream sticker card */}

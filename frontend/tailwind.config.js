@@ -17,6 +17,7 @@ export default {
           orange: '#E8622B',
           teal: '#2FA3B5',
           yellow: '#FFD41F',
+          pink: '#FF5C8A',
           approve: '#3F8A12',
           deny: '#FF9A1F',
           navy: '#1B1250',
@@ -84,6 +85,7 @@ export default {
         display: ['"Rubik"', '"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
         sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
+        hand: ['"Caveat Brush"', 'cursive'],
       },
       fontSize: {
         'display-xl': ['3rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
@@ -119,8 +121,14 @@ export default {
         'fade-in': 'fadeIn 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
         'bounce-subtle': 'bounceSubtle 0.6s ease',
+        'sticker-slap': 'stickerSlap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both',
       },
       keyframes: {
+        stickerSlap: {
+          '0%': { opacity: '0', transform: 'translateY(12px) scale(0.96) rotate(-2deg)' },
+          '60%': { opacity: '1', transform: 'translateY(-2px) scale(1.02) rotate(1deg)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1) rotate(0deg)' },
+        },
         candyFloat: {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%': { transform: 'translateY(-8px)' },

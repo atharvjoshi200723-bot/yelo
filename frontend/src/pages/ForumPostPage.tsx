@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { ForumPost, Comment } from '../types';
-import { ArrowLeft, ArrowUp, MessageSquare, Clock, Flag } from 'lucide-react';
+import { ArrowLeft, ArrowUp, MessageSquare, Clock, Flag, CheckCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import ReportModal from '../components/moderation/ReportModal';
 import { ImagePicker } from '../components/ui/ImagePicker';
 import { useAuth } from '../context/AuthContext';
 import { getSocket } from '../lib/socket';
+import { DoodleStar, DoodleSquiggle } from '../components/neo/Decorations';
 
 export default function ForumPostPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,7 +33,7 @@ export default function ForumPostPage() {
       setComments(commentsRes.data.comments || []);
       setLoading(false);
     }).catch(() => navigate('/forums'));
-  }, [id]);
+  }, [id, navigate]);
 
   // Real-time: join this post's room so comments from other phones are pushed
   // to us the moment they are posted — no reload needed.
@@ -48,7 +49,6 @@ export default function ForumPostPage() {
       setComments(prev => prev.some(c => c.id === comment.id) ? prev : [...prev, comment]);
     };
 
-    // 'connect' also fires on reconnect — rooms are re-joined server-side each time
     socket.on('connect', join);
     socket.on('forum_comment', onComment);
     join();
@@ -59,9 +59,7 @@ export default function ForumPostPage() {
     };
   }, [id]);
 
-  // Slow safety-net poll in case a socket push is missed (background tabs, brief
-  // disconnects). 60s keeps us well inside the 100-req/15-min rate limit — the
-  // earlier 10s cadence silently exhausted it alongside TopBar's 30s polling.
+  // Slow safety-net poll in case a socket push is missed
   useEffect(() => {
     if (!id) return;
     const refreshComments = () => {
@@ -90,8 +88,6 @@ export default function ForumPostPage() {
         isAnonymous,
         imageUrls: commentImages.length > 0 ? commentImages : undefined,
       });
-      // Functional update + dedupe: the socket push can beat this HTTP response
-      // (same comment, same id), and appending blindly would duplicate it.
       setComments(prev => prev.some(c => c.id === res.data.comment.id) ? prev : [...prev, res.data.comment]);
       setNewComment('');
       setCommentImages([]);
@@ -107,127 +103,199 @@ export default function ForumPostPage() {
     } catch { /* ignore */ }
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" /></div>;
+  if (loading) {
+    return (
+      <div className="pb-24 max-w-lg mx-auto px-4 pt-6 space-y-4">
+        <div className="w-10 h-10 rounded-full bg-[#1B1250]/10 border-2 border-dashed border-[#1B1250]/30 animate-pulse" />
+        <div className="bg-[#F6FBD4] border-3 border-dashed border-[#1B1250]/30 rounded-[28px] h-64 animate-pulse p-6" />
+      </div>
+    );
+  }
+
   if (!post) return null;
 
-  return (
-    <div>
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 py-2.5 -my-1 text-slate-600 hover:text-slate-800 mb-4">
-        <ArrowLeft size={18} /> Back
-      </button>
+  const authorDisplayName = post.is_anonymous ? 'Anonymous' : (post.author_name || 'Anonymous');
+  const authorInitial = authorDisplayName.charAt(0).toUpperCase();
 
-      <article className="bg-white rounded-2xl shadow-sm p-5 sm:p-6 mb-6">
-        <div className="flex gap-4">
+  return (
+    <div className="pb-28 max-w-lg mx-auto px-4 pt-4">
+      {/* Header back button */}
+      <div className="flex items-center justify-between mb-5">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo flex items-center justify-center text-[#1B1250] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+          aria-label="Back"
+        >
+          <ArrowLeft size={18} strokeWidth={2.5} />
+        </button>
+        <div className="flex items-center gap-1.5">
+          <DoodleStar color="teal" size={20} rotate={12} />
+          <span className="text-xs font-black text-[#1B1250] uppercase tracking-wider">Discussion</span>
+        </div>
+      </div>
+
+      {/* Hero Post Sticker Card */}
+      <article className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[28px] shadow-neo-card p-5 sm:p-6 mb-5 relative">
+        {/* Category tag badge */}
+        <span className="bg-[#2FA3B5] text-white text-[10px] font-black uppercase px-3 py-1 rounded-full border-2 border-[#1B1250] shadow-neo-sm absolute -top-2.5 right-6 rotate-2 select-none">
+          {post.college_name || 'Campus'}
+        </span>
+
+        {/* Author Header */}
+        <div className="flex items-center gap-3 mb-4 pt-1">
+          <div className="w-11 h-11 rounded-full bg-[#1B1250] border-2.5 border-[#1B1250] ring-3 ring-[#9A63E6] shadow-[2px_2px_0_#1B1250] flex items-center justify-center shrink-0">
+            <span className="text-[#F6FBD4] font-black text-sm">{authorInitial}</span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-display font-black text-sm text-[#1B1250] truncate">{authorDisplayName}</p>
+            <p className="text-[10px] font-bold text-[#1B1250]/60 uppercase tracking-wider">
+              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+            </p>
+          </div>
+        </div>
+
+        {/* Title */}
+        <h1 className="font-display font-black text-2xl text-[#1B1250] leading-tight tracking-tight mb-3">
+          {post.title}
+        </h1>
+
+        {/* Content */}
+        <div className="font-semibold text-sm sm:text-base text-[#1B1250] whitespace-pre-wrap leading-relaxed mb-4">
+          {post.content}
+        </div>
+
+        {/* Images */}
+        {post.image_urls && post.image_urls.length > 0 && (
+          <div className={`grid gap-2 mb-4 rounded-[18px] overflow-hidden border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] ${
+            post.image_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
+          }`}>
+            {post.image_urls.map((url, i) => (
+              <img
+                key={`${url}-${i}`}
+                src={url}
+                alt={`Post image ${i + 1}`}
+                loading="lazy"
+                className={`w-full bg-white object-cover ${post.image_urls!.length === 1 ? 'max-h-96' : 'h-40'}`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Footer actions: Upvote + Report */}
+        <div className="flex items-center justify-between pt-3 border-t-2 border-[#1B1250]/15">
           <button
+            type="button"
             onClick={toggleUpvote}
-            className={`shrink-0 p-2 rounded-lg transition-colors ${post.isUpvoted ? 'bg-brand-100 text-brand-600' : 'text-slate-400 hover:text-brand-600'}`}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border-2.5 border-[#1B1250] text-xs font-black select-none transition-all active:translate-x-0.5 active:translate-y-0.5 ${
+              post.isUpvoted
+                ? 'bg-[#C5F030] text-[#1B1250] shadow-[2px_2px_0_#1B1250]'
+                : 'bg-white text-[#1B1250] shadow-[1px_2px_0_#1B1250] hover:bg-[#F5F2FF]'
+            }`}
             aria-label="Upvote"
           >
-            <ArrowUp size={20} />
+            <ArrowUp size={16} strokeWidth={3} className={post.isUpvoted ? 'text-[#1B1250]' : 'text-[#1B1250]'} />
+            <span>{post.upvotes || 0}</span>
           </button>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 text-xs text-slate-500 mb-2 flex-wrap">
-              <span className="font-medium">{post.is_anonymous ? 'Anonymous' : post.author_name}</span>
-              <span className="opacity-50">·</span>
-              <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
-              <span className="opacity-50">·</span>
-              <span>{post.college_name}</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3 leading-snug">{post.title}</h1>
-            <div className="text-slate-700 whitespace-pre-wrap leading-relaxed text-base">{post.content}</div>
-            {post.image_urls && post.image_urls.length > 0 && (
-              <div className={`grid gap-2 mt-4 ${post.image_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                {post.image_urls.map((url, i) => (
-                  <img
-                    key={`${url}-${i}`}
-                    src={url}
-                    alt={`Post image ${i + 1}`}
-                    loading="lazy"
-                    className={`w-full rounded-xl object-cover ${post.image_urls!.length === 1 ? 'max-h-96' : 'h-40'}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+
+          {!post.is_anonymous && post.user_id !== user?.id && (
+            <button
+              type="button"
+              onClick={() => setShowReportModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-[#EAE4FB] text-[#1B1250] rounded-full border-2 border-[#1B1250] text-xs font-black shadow-neo-sm active:translate-x-0.5 active:translate-y-0.5 transition-all"
+            >
+              <Flag size={12} strokeWidth={2.5} /> Report
+            </button>
+          )}
         </div>
       </article>
 
-      {!post.is_anonymous && post.user_id !== user?.id && (
-        <div className="mb-6 flex justify-start">
-          <button
-            onClick={() => setShowReportModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-cream-50 text-navy-500 rounded-xl text-sm font-medium hover:bg-cream-100 transition-colors"
-          >
-            <Flag size={16} /> Report Post
-          </button>
-        </div>
-      )}
-
+      {/* Comments Section */}
       <section className="mb-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          <MessageSquare size={18} className="inline mr-2" />
-          {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
-        </h2>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <h2 className="text-xs font-black text-[#1B1250] uppercase tracking-wider flex items-center gap-1.5">
+            <MessageSquare size={14} strokeWidth={2.5} />
+            {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+          </h2>
+          <DoodleSquiggle color="#9A63E6" width={36} height={10} />
+        </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+        {/* Add Comment Card */}
+        <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[24px] shadow-neo p-4 mb-5">
           <textarea
             value={newComment}
             onChange={e => setNewComment(e.target.value)}
-            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none text-sm"
+            className="w-full px-4 py-3 bg-white border-2.5 border-[#1B1250] rounded-[18px] text-sm font-bold text-[#1B1250] placeholder:text-[#1B1250]/40 shadow-[2px_2px_0_#1B1250] focus:outline-none resize-none"
             rows={3}
             placeholder="Write a comment..."
           />
           <div className="mt-3">
             <ImagePicker value={commentImages} onChange={setCommentImages} />
           </div>
-          <div className="flex items-center justify-between flex-wrap mt-3 gap-3">
-            <label className="flex items-center gap-2 text-sm text-slate-600">
+          <div className="flex items-center justify-between flex-wrap mt-3 gap-3 pt-2 border-t-2 border-[#1B1250]/15">
+            <label className="flex items-center gap-2 text-xs font-black text-[#1B1250] cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={isAnonymous}
                 onChange={e => setIsAnonymous(e.target.checked)}
-                className="w-4 h-4 text-brand-600 rounded"
+                className="w-4 h-4 rounded border-2 border-[#1B1250] text-[#9A63E6] focus:ring-0"
               />
               Post anonymously
             </label>
             <button
+              type="button"
               onClick={addComment}
               disabled={submitting || !newComment.trim()}
-              className="px-4 py-2 bg-brand-600 text-white rounded-xl text-sm hover:bg-brand-700 disabled:opacity-50 shrink-0"
+              className="px-5 py-2.5 bg-[#C5F030] hover:bg-[#bcf01a] text-[#1B1250] border-2.5 border-[#1B1250] shadow-[2px_3px_0_#1B1250] rounded-full font-display font-black text-xs uppercase disabled:opacity-50 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
             >
               {submitting ? 'Posting...' : 'Comment'}
             </button>
           </div>
         </div>
 
-        <div className="space-y-3">
-          {comments.map(comment => (
-            <article key={comment.id} className="bg-white rounded-2xl shadow-sm p-4">
-              <div className="flex items-center gap-2 text-xs text-slate-500 mb-2 flex-wrap">
-                <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
-                  <span className="text-xs">{comment.is_anonymous ? '?' : comment.author_name?.charAt(0)}</span>
+        {/* Comment Bubbles */}
+        <div className="space-y-3.5">
+          {comments.map((comment, index) => {
+            const commentAuthorName = comment.is_anonymous ? 'Anonymous' : (comment.author_name || 'User');
+            const commentInitial = commentAuthorName.charAt(0).toUpperCase();
+            const rotation = index % 2 === 0 ? '-rotate-0.5' : 'rotate-0.5';
+
+            return (
+              <article
+                key={comment.id}
+                className={`bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[22px] rounded-tl-sm shadow-[3px_4px_0_#1B1250] p-4 relative ${rotation}`}
+              >
+                <div className="flex items-center gap-2.5 mb-2 flex-wrap">
+                  <div className="w-6 h-6 rounded-full bg-[#1B1250] border-1.5 border-[#1B1250] flex items-center justify-center shrink-0">
+                    <span className="text-[10px] font-black text-[#F6FBD4]">{commentInitial}</span>
+                  </div>
+                  <span className="font-black text-xs text-[#1B1250]">{commentAuthorName}</span>
+                  <span className="text-[#1B1250]/40">·</span>
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-[#1B1250]/60">
+                    <Clock size={11} className="shrink-0" />
+                    <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
+                  </div>
                 </div>
-                <span className="font-medium">{comment.is_anonymous ? 'Anonymous' : comment.author_name}</span>
-                <span className="opacity-50">·</span>
-                <Clock size={12} className="shrink-0" />
-                <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
-              </div>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
-              {comment.image_urls && comment.image_urls.length > 0 && (
-                <div className={`grid gap-2 mt-3 ${comment.image_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                  {comment.image_urls.map((url, i) => (
-                    <img
-                      key={`${url}-${i}`}
-                      src={url}
-                      alt={`Comment image ${i + 1}`}
-                      loading="lazy"
-                      className={`w-full rounded-xl object-cover ${comment.image_urls!.length === 1 ? 'max-h-80' : 'h-36'}`}
-                    />
-                  ))}
-                </div>
-              )}
-            </article>
-          ))}
+                <p className="text-xs sm:text-sm font-semibold text-[#1B1250] whitespace-pre-wrap leading-relaxed">
+                  {comment.content}
+                </p>
+                {comment.image_urls && comment.image_urls.length > 0 && (
+                  <div className={`grid gap-2 mt-3 rounded-[14px] overflow-hidden border-2 border-[#1B1250] ${
+                    comment.image_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
+                  }`}>
+                    {comment.image_urls.map((url, i) => (
+                      <img
+                        key={`${url}-${i}`}
+                        src={url}
+                        alt={`Comment image ${i + 1}`}
+                        loading="lazy"
+                        className={`w-full bg-white object-cover ${comment.image_urls!.length === 1 ? 'max-h-80' : 'h-36'}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </article>
+            );
+          })}
         </div>
       </section>
 

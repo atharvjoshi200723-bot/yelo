@@ -7,7 +7,14 @@ import { Send, ArrowLeft, CheckCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { ErrorState, ListSkeleton } from '../components/ui/FeedbackStates';
-import { CandyBall } from '../components/neo/Decorations';
+import {
+  CandyBall,
+  WavyHighlight,
+  DoodleStar,
+  DoodleSquiggle,
+  HandwrittenNote,
+  Mascot,
+} from '../components/neo/Decorations';
 
 export default function MessagesPage() {
   const { user } = useAuth();
@@ -162,22 +169,32 @@ export default function MessagesPage() {
   if (!selectedConv) {
     return (
       <div className="w-full relative pb-14">
-        {/* Heading with Yellow Highlight */}
+        {/* Heading with Wavy Highlight & Handwritten Note */}
         <div className="mb-5 pt-1">
-          <h1 className="font-display font-black text-3xl sm:text-4xl text-[#1B1250] tracking-tight leading-[1.08]">
-            Who are you <br />
-            <span className="inline-block bg-[#FFD41F] text-[#1B1250] border-2.5 border-[#1B1250] shadow-[2px_3px_0_#1B1250] px-3 py-0.5 rounded-[10px] -rotate-1 mt-1">
-              talking to?
-            </span>
-          </h1>
+          <div className="flex items-start justify-between">
+            <h1 className="font-display font-black text-3xl sm:text-4xl text-[#1B1250] tracking-tight leading-[1.08]">
+              Who are you <br />
+              <span className="inline-flex items-center gap-2 mt-1">
+                <WavyHighlight>talking to?</WavyHighlight>
+                <DoodleStar color="yellow" size={24} rotate={15} />
+              </span>
+            </h1>
+            <div className="hidden xs:flex flex-col items-end pt-1">
+              <HandwrittenNote rotate={-3} className="text-[#FFD41F] drop-shadow-[1px_1px_0_#1B1250]">
+                slide into DMs
+              </HandwrittenNote>
+              <DoodleSquiggle color="#FFD41F" width={44} height={12} className="mt-0.5" />
+            </div>
+          </div>
         </div>
 
-        {/* Empty State: Big Candy-Ball Illustration */}
+        {/* Empty State: Big Candy-Ball & Mascot Illustration */}
         {conversations.length === 0 ? (
           <div className="text-center py-14 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[28px] shadow-[6px_8px_0_#1B1250] p-8 -rotate-1 relative overflow-hidden">
-            {/* Big Candy Ball Illustration */}
-            <div className="flex justify-center mb-5">
-              <CandyBall color="purple" size={96} float />
+            {/* Big Candy Ball & Mascot Illustration */}
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <CandyBall color="purple" size={80} float />
+              <Mascot size={52} mood="wink" waving />
             </div>
             <p className="font-display font-black text-2xl text-[#1B1250] mb-1">
               No conversations yet
@@ -202,13 +219,14 @@ export default function MessagesPage() {
                 const initial = otherUserName.charAt(0)?.toUpperCase() || '?';
                 const avatarRing = ringColors[index % ringColors.length];
                 const rotation = index % 2 === 0 ? '-rotate-1 hover:rotate-0' : 'rotate-1 hover:rotate-0';
+                const staggerClass = `stagger-${Math.min((index % 5) + 1, 5)}`;
 
                 return (
                   <button
                     key={conv.id}
                     type="button"
                     onClick={() => setSelectedConv(conv)}
-                    className={`w-full bg-[#F6FBD4] text-[#1B1250] border-3 border-[#1B1250] rounded-[24px] rounded-tl-sm p-4.5 sm:p-5 shadow-[4px_6px_0_#1B1250] hover:shadow-[6px_8px_0_#1B1250] text-left transition-all duration-150 active:translate-x-0.5 active:translate-y-0.5 relative select-none ${rotation}`}
+                    className={`w-full bg-[#F6FBD4] text-[#1B1250] border-3 border-[#1B1250] rounded-[24px] rounded-tl-sm p-4.5 sm:p-5 shadow-[4px_6px_0_#1B1250] hover:shadow-[6px_8px_0_#1B1250] text-left transition-all duration-150 active:translate-x-0.5 active:translate-y-0.5 relative select-none animate-sticker-slap ${staggerClass} ${rotation}`}
                   >
                     <div className="flex items-start gap-3.5">
                       {/* Avatar with Colored Ring Overlapping the Bubble Corner */}
@@ -243,11 +261,11 @@ export default function MessagesPage() {
                             {ctx.label}
                           </span>
 
-                          {/* Unread indicator: lime dot with bounce & count */}
+                          {/* Unread indicator: pink dot with bounce & count */}
                           {isUnread && (
                             <div className="flex items-center gap-1 ml-auto">
-                              <span className="w-2.5 h-2.5 bg-[#C5F030] border-2 border-[#1B1250] rounded-full animate-bounce" />
-                              <span className="px-2 py-0.5 bg-[#C5F030] text-[#1B1250] text-[10px] font-black rounded-full border-2 border-[#1B1250] shadow-[1px_1px_0_#1B1250]">
+                              <span className="w-2.5 h-2.5 bg-[#FF5C8A] border-2 border-[#1B1250] rounded-full animate-bounce" />
+                              <span className="px-2 py-0.5 bg-[#FF5C8A] text-white text-[10px] font-black rounded-full border-2 border-[#1B1250] shadow-[1px_1px_0_#1B1250]">
                                 {conv.unread_count}
                               </span>
                             </div>

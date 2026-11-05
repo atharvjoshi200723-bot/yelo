@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { BuddyProfile } from '../types';
-import { ArrowLeft, Edit2, Pause, Play, Trash2, Star, MapPin, CheckCircle, Eye } from 'lucide-react';
+import { ArrowLeft, Edit2, Pause, Play, Trash2, Star, MapPin, CheckCircle, Eye, ChevronRight } from 'lucide-react';
+import { Mascot, ChaiCupSticker, WavyHighlight } from '../components/neo/Decorations';
 
 export default function MyBuddyProfilePage() {
   const navigate = useNavigate();
@@ -36,157 +37,175 @@ export default function MyBuddyProfilePage() {
     setActionLoading(false);
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-navy-900" />
-    </div>
-  );
-
-  if (!profile) return (
-    <div className="text-center py-16 pb-24">
-      <div className="w-20 h-20 bg-cream-200 rounded-3xl flex items-center justify-center mx-auto mb-4">
-        <span className="text-4xl">🧑‍🤝‍🧑</span>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-3 border-[#1B1250]" />
       </div>
-      <h2 className="font-display text-xl text-navy-900 mb-2">No buddy profile yet</h2>
-      <p className="text-sm text-navy-400 mb-6">Become a buddy and let others find you</p>
-      <Link
-        to="/buddy/become"
-        className="inline-flex items-center gap-2 bg-navy-900 text-cream-50 px-6 py-3 rounded-2xl font-medium hover:bg-navy-800 transition-all btn-press"
-      >
-        Become a Buddy
-      </Link>
-    </div>
-  );
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="pb-24 max-w-lg mx-auto px-4 pt-8">
+        <div className="text-center py-14 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[28px] shadow-neo-card p-8 -rotate-1">
+          <div className="flex items-center justify-center gap-2.5 mb-4">
+            <ChaiCupSticker size={32} />
+            <Mascot size={52} mood="happy" waving />
+          </div>
+          <h2 className="font-display font-black text-2xl text-[#1B1250] mb-2">No buddy profile yet</h2>
+          <p className="text-sm font-bold text-[#1B1250]/70 mb-6">Become a buddy and let others find you</p>
+          <Link
+            to="/buddy/become"
+            className="inline-flex items-center gap-2 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] shadow-neo rounded-full px-6 py-3 font-display font-black uppercase text-sm active:translate-x-[2px] active:translate-y-[3px] active:shadow-none transition-all"
+          >
+            Become a Buddy
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const isActive = profile.status === 'active';
 
   return (
-    <div className="pb-24 max-w-lg mx-auto">
+    <div className="pb-28 max-w-lg mx-auto px-4 pt-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/buddy')} className="text-navy-400 hover:text-navy-600 transition-colors">
-          <ArrowLeft size={20} />
+        <button
+          onClick={() => navigate('/buddy')}
+          className="w-10 h-10 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo flex items-center justify-center text-[#1B1250] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex-shrink-0"
+          aria-label="Back"
+        >
+          <ArrowLeft size={18} strokeWidth={2.5} />
         </button>
-        <h1 className="font-display text-2xl text-navy-900">My Buddy Profile</h1>
+        <h1 className="font-display font-black text-2xl text-[#1B1250]">
+          <WavyHighlight>My Buddy Profile</WavyHighlight>
+        </h1>
       </div>
 
-      {/* Status Toggle */}
-      <div className="bg-white rounded-2xl p-4 mb-4 shadow-soft">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${isActive ? 'bg-sage-500' : 'bg-navy-300'}`} />
-            <div>
-              <p className="font-medium text-navy-900 text-sm">{isActive ? 'Visible to others' : 'Paused'}</p>
-              <p className="text-xs text-navy-400">{isActive ? 'People can find and request you' : 'Hidden from new discovery'}</p>
+      {/* Status Toggle Card */}
+      <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[22px] shadow-neo p-4 mb-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-3.5 h-3.5 rounded-full border-2 border-[#1B1250] flex-shrink-0 ${isActive ? 'bg-[#3F8A12] animate-pulse' : 'bg-[#1B1250]/30'}`} />
+            <div className="min-w-0">
+              <p className="font-display font-black text-[#1B1250] text-sm truncate">{isActive ? 'Visible to others' : 'Paused'}</p>
+              <p className="text-xs font-bold text-[#1B1250]/60 truncate">{isActive ? 'People can find and request you' : 'Hidden from new discovery'}</p>
             </div>
           </div>
           <button
+            type="button"
             onClick={togglePause}
             disabled={actionLoading}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-full border-2.5 border-[#1B1250] font-display font-black text-xs uppercase shadow-[2px_2px_0_#1B1250] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-1.5 flex-shrink-0 ${
               isActive
-                ? 'bg-navy-100 text-navy-600 hover:bg-navy-200'
-                : 'bg-sage-500 text-white hover:bg-sage-600'
+                ? 'bg-[#FFD41F] text-[#1B1250]'
+                : 'bg-[#C5F030] text-[#1B1250]'
             }`}
           >
-            {isActive ? <><Pause size={14} className="inline mr-1" /> Pause</> : <><Play size={14} className="inline mr-1" /> Resume</>}
+            {isActive ? <><Pause size={13} strokeWidth={3} /> Pause</> : <><Play size={13} strokeWidth={3} /> Resume</>}
           </button>
         </div>
       </div>
 
-      {/* Profile Preview Card - Always Buddy gradient */}
-      <div className="bg-white rounded-3xl shadow-soft overflow-hidden mb-4">
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-6 text-center relative">
-          <div className="absolute top-3 left-3 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
-            <span className="text-xs font-medium text-white">🧑‍🤝‍🧑 Buddy</span>
+      {/* Profile Preview Sticker Card */}
+      <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[28px] shadow-neo-card overflow-hidden mb-6 -rotate-0.5">
+        <div className="bg-gradient-to-r from-[#9A63E6] via-[#B79BF0] to-[#E8622B] p-6 text-center border-b-3 border-[#1B1250] relative">
+          <div className="absolute top-3 left-3 bg-[#F6FBD4] text-[#1B1250] border-2 border-[#1B1250] rounded-full px-3 py-0.5 shadow-sm">
+            <span className="text-[11px] font-black uppercase">🧑‍🤝‍🧑 Buddy</span>
           </div>
           {profile.image_urls?.[0] ? (
-            <img src={profile.image_urls[0]} alt="Your buddy profile photo" className="w-20 h-20 rounded-2xl mx-auto mb-3 object-cover border-2 border-white/30" />
+            <img src={profile.image_urls[0]} alt="Your buddy profile" className="w-22 h-22 rounded-full mx-auto mb-3 object-cover border-3 border-[#1B1250] shadow-neo" />
           ) : (
-            <div className="w-20 h-20 bg-white/20 rounded-2xl mx-auto mb-3 flex items-center justify-center border-2 border-white/30">
-              <span className="text-3xl font-bold text-white">{profile.name?.charAt(0) || '?'}</span>
+            <div className="w-22 h-22 bg-[#FFD41F] rounded-full mx-auto mb-3 flex items-center justify-center border-3 border-[#1B1250] shadow-neo">
+              <span className="text-3xl font-black font-display text-[#1B1250]">{profile.name?.charAt(0) || '?'}</span>
             </div>
           )}
-          <h2 className="font-display text-xl text-white">{profile.name}</h2>
-          <p className="text-white/70 text-sm mt-1 flex items-center justify-center gap-1">
-            <MapPin size={12} /> {profile.location_name || 'Dehradun'}
+          <h2 className="font-display font-black text-2xl text-white drop-shadow-[2px_2px_0_#1B1250]">{profile.name}</h2>
+          <p className="text-white text-xs font-black mt-1 flex items-center justify-center gap-1 drop-shadow-[1px_1px_0_#1B1250]">
+            <MapPin size={12} strokeWidth={2.5} /> {profile.location_name || 'Dehradun'}
           </p>
         </div>
 
         <div className="p-5">
-          <h3 className="font-semibold text-navy-900 mb-1">{profile.title}</h3>
-          <p className="text-sm text-navy-500 italic mb-3">"{profile.description}"</p>
+          <h3 className="font-display font-black text-lg text-[#1B1250] mb-1">{profile.title}</h3>
+          <p className="text-sm font-semibold text-[#1B1250]/80 italic mb-4 bg-white/70 p-3 rounded-[16px] border-2 border-[#1B1250]/20">"{profile.description}"</p>
 
           <div className="flex flex-wrap gap-1.5 mb-4">
             {profile.activities?.map(act => (
-              <span key={act} className="px-2.5 py-1 bg-cream-100 rounded-full text-xs font-medium text-navy-600">{act}</span>
+              <span key={act} className="px-3 py-1 bg-[#C5F030] text-[#1B1250] border-2 border-[#1B1250] rounded-full text-xs font-black shadow-sm">{act}</span>
             ))}
           </div>
 
-          <div className="flex items-center gap-4 text-xs text-navy-400 mb-4">
+          <div className="flex items-center gap-4 text-xs font-black text-[#1B1250] mb-4">
             <span className="flex items-center gap-1">
-              <Star size={14} className="text-amber-500 fill-amber-500" />
-              <span className="font-medium">{profile.avg_rating ? Number(profile.avg_rating).toFixed(1) : 'New'}</span>
+              <Star size={14} className="text-[#FFD41F] fill-[#FFD41F]" />
+              <span>{profile.avg_rating ? Number(profile.avg_rating).toFixed(1) : 'New'}</span>
             </span>
             <span className="flex items-center gap-1">
-              <CheckCircle size={14} className="text-sage-500" />
+              <CheckCircle size={14} className="text-[#3F8A12]" />
               {profile.total_sessions} sessions
             </span>
           </div>
 
-          <div className="flex items-center justify-between bg-cream-50 rounded-xl p-3">
+          <div className="flex items-center justify-between bg-white/80 border-2 border-[#1B1250]/30 rounded-[18px] p-3.5">
             <div>
-              <p className="text-lg font-bold text-navy-900">₹{profile.price_per_hour}</p>
-              <p className="text-xs text-navy-400">/session {profile.negotiable ? '· Negotiable' : ''}</p>
+              <p className="text-2xl font-display font-black text-[#1B1250]">₹{profile.price_per_hour}</p>
+              <p className="text-xs font-bold text-[#1B1250]/60">/session {profile.negotiable ? '· Negotiable' : ''}</p>
             </div>
-            <div className="text-right text-xs text-navy-500">
-              <p>{profile.availability_days?.map(d => d.slice(0, 3)).join(', ')}</p>
-              <p>{profile.availability_times}</p>
+            <div className="text-right text-xs font-black text-[#1B1250]">
+              <p className="uppercase">{profile.availability_days?.map(d => d.slice(0, 3)).join(', ')}</p>
+              <p className="text-[#1B1250]/60 font-bold">{profile.availability_times}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Action Menu Rows */}
       <div className="space-y-3">
         <Link
           to="/buddy/become"
-          className="flex items-center gap-3 bg-white rounded-2xl p-4 shadow-soft card-hover transition-all"
+          className="flex items-center gap-3.5 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[22px] p-4 shadow-neo hover:bg-white active:translate-x-0.5 active:translate-y-0.5 transition-all"
         >
-          <div className="w-10 h-10 bg-cream-100 rounded-xl flex items-center justify-center">
-            <Edit2 size={18} className="text-navy-600" />
+          <div className="w-10 h-10 bg-[#FFD41F] border-2 border-[#1B1250] rounded-full flex items-center justify-center flex-shrink-0 text-[#1B1250]">
+            <Edit2 size={16} strokeWidth={2.5} />
           </div>
-          <div className="flex-1">
-            <p className="font-medium text-navy-900 text-sm">Edit Profile</p>
-            <p className="text-xs text-navy-400">Change bio, activities, pricing, availability</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-black text-sm text-[#1B1250]">Edit Profile</p>
+            <p className="text-xs font-bold text-[#1B1250]/60 truncate">Change bio, activities, pricing, availability</p>
           </div>
+          <ChevronRight size={18} strokeWidth={3} className="text-[#1B1250]/50" />
         </Link>
 
         <Link
           to="/buddy"
-          className="flex items-center gap-3 bg-white rounded-2xl p-4 shadow-soft card-hover transition-all"
+          className="flex items-center gap-3.5 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[22px] p-4 shadow-neo hover:bg-white active:translate-x-0.5 active:translate-y-0.5 transition-all"
         >
-          <div className="w-10 h-10 bg-cream-100 rounded-xl flex items-center justify-center">
-            <Eye size={18} className="text-navy-600" />
+          <div className="w-10 h-10 bg-[#2FA3B5] border-2 border-[#1B1250] rounded-full flex items-center justify-center flex-shrink-0 text-white">
+            <Eye size={16} strokeWidth={2.5} />
           </div>
-          <div className="flex-1">
-            <p className="font-medium text-navy-900 text-sm">View Public Profile</p>
-            <p className="text-xs text-navy-400">See how others see your profile</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-black text-sm text-[#1B1250]">View Public Profile</p>
+            <p className="text-xs font-bold text-[#1B1250]/60 truncate">See how others see your profile</p>
           </div>
+          <ChevronRight size={18} strokeWidth={3} className="text-[#1B1250]/50" />
         </Link>
 
         <button
+          type="button"
           onClick={removeProfile}
           disabled={actionLoading}
-          className="w-full flex items-center gap-3 bg-white rounded-2xl p-4 shadow-soft card-hover transition-all text-left"
+          className="w-full flex items-center gap-3.5 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[22px] p-4 shadow-neo hover:bg-[#E8622B]/10 active:translate-x-0.5 active:translate-y-0.5 transition-all text-left"
         >
-          <div className="w-10 h-10 bg-coral-50 rounded-xl flex items-center justify-center">
-            <Trash2 size={18} className="text-coral-600" />
+          <div className="w-10 h-10 bg-[#E8622B] border-2 border-[#1B1250] rounded-full flex items-center justify-center flex-shrink-0 text-white">
+            <Trash2 size={16} strokeWidth={2.5} />
           </div>
-          <div>
-            <p className="font-medium text-coral-600 text-sm">Remove Buddy Profile</p>
-            <p className="text-xs text-navy-400">Stop being a buddy permanently</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-black text-sm text-[#E8622B]">Remove Buddy Profile</p>
+            <p className="text-xs font-bold text-[#1B1250]/60 truncate">Stop being a buddy permanently</p>
           </div>
+          <ChevronRight size={18} strokeWidth={3} className="text-[#E8622B]/50" />
         </button>
       </div>
     </div>

@@ -11,6 +11,16 @@ import { CreatePlanModal } from '../components/plans/CreatePlanModal';
 import { ImagePicker } from '../components/ui/ImagePicker';
 import { useKeyboardInset } from '../hooks/useKeyboardInset';
 import { getSocket } from '../lib/socket';
+import {
+  WavyHighlight,
+  DoodleStar,
+  DoodleSquiggle,
+  DoodleArrow,
+  HandwrittenNote,
+  Mascot,
+  ChaiCupSticker,
+  CloudSticker,
+} from '../components/neo/Decorations';
 
 const CATEGORIES = ['general', 'rent', 'buddy', 'college', 'event', 'question', 'discussion'];
 const CATEGORY_STYLES: Record<string, { label: string; emoji: string; bg: string; text: string }> = {
@@ -453,9 +463,10 @@ export default function HomePage() {
     // Colored avatar ring cycle
     const ringColors = ['ring-[#E8622B]', 'ring-[#2FA3B5]', 'ring-[#9A63E6]', 'ring-[#C5F030]'];
     const avatarRing = ringColors[index % ringColors.length];
+    const staggerClass = `stagger-${Math.min((index % 5) + 1, 5)}`;
 
     return (
-      <div key={post.id} className="transition-transform duration-200 ease-out">
+      <div key={post.id} className={`transition-transform duration-200 ease-out animate-sticker-slap ${staggerClass}`}>
         {/* Main Sticker Card */}
         <div
           className={`bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] overflow-hidden transition-all duration-200 ${rotationStyle} ${
@@ -536,14 +547,14 @@ export default function HomePage() {
                 onClick={() => toggleLike(post.id)}
                 disabled={likingPosts[post.id]}
                 className={`flex items-center gap-1.5 text-xs font-black text-[#1B1250] transition-transform duration-150 active:scale-75 hover:scale-110 active:translate-y-0.5 select-none ${
-                  post.isLiked ? 'text-[#E8622B]' : 'hover:text-[#E8622B]'
+                  post.isLiked ? 'text-[#FF5C8A]' : 'hover:text-[#FF5C8A]'
                 }`}
                 aria-label="Like post"
               >
                 <Heart
                   size={20}
                   strokeWidth={2.5}
-                  className={`transition-colors ${post.isLiked ? 'fill-[#E8622B] text-[#E8622B]' : 'text-[#1B1250]'}`}
+                  className={`transition-colors ${post.isLiked ? 'fill-[#FF5C8A] text-[#FF5C8A]' : 'text-[#1B1250]'}`}
                 />
                 <span className="tabular-nums">{Math.max(0, post.likes_count ?? 0)}</span>
               </button>
@@ -611,14 +622,23 @@ export default function HomePage() {
 
   return (
     <div className="w-full relative pb-10">
-      {/* Neo-Brutalist Heading with Yellow Highlight on "nearby" */}
-      <div className="mb-5 pt-1">
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[#1B1250] tracking-tight leading-[1.08]">
-          What's happening <br />
-          <span className="inline-block bg-[#FFD41F] border-2.5 border-[#1B1250] shadow-[3px_3px_0_#1B1250] px-3 py-0.5 rounded-[10px] -rotate-1 mt-1 text-[#1B1250]">
-            nearby?
-          </span>
-        </h1>
+      {/* Neo-Brutalist Heading with Wavy Highlight on "nearby" + Handwritten Note & Doodles */}
+      <div className="mb-5 pt-1 relative">
+        <div className="flex items-start justify-between">
+          <h1 className="font-display font-black text-3xl sm:text-4xl text-[#1B1250] tracking-tight leading-[1.08]">
+            What's happening <br />
+            <span className="inline-flex items-center gap-2 mt-1">
+              <WavyHighlight>nearby?</WavyHighlight>
+              <DoodleStar color="pink" size={24} rotate={12} />
+            </span>
+          </h1>
+          <div className="hidden xs:flex flex-col items-end pt-1">
+            <HandwrittenNote rotate={-3} className="text-[#9A63E6]">
+              psst, scroll →
+            </HandwrittenNote>
+            <DoodleSquiggle color="#9A63E6" width={48} height={12} className="mt-0.5" />
+          </div>
+        </div>
       </div>
 
       {/* Category Chips: Pill, Cream, 3px Navy Border, Selected = Lime */}
@@ -749,18 +769,23 @@ export default function HomePage() {
       ) : error ? (
         <ErrorState message={error} onRetry={() => { setLoading(true); fetchPosts(1, false); }} />
       ) : posts.length === 0 ? (
-        <div className="text-center py-16 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] p-8 -rotate-1">
-          <div className="w-16 h-16 bg-[#C5F030] border-3 border-[#1B1250] shadow-[3px_3px_0_#1B1250] rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">🔍</span>
+        <div className="text-center py-16 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] p-8 -rotate-1 relative overflow-hidden">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <CloudSticker size={32} />
+            <Mascot size={54} mood="wink" waving />
+            <ChaiCupSticker size={32} />
           </div>
           <p className="font-display font-black text-2xl text-[#1B1250] mb-2">Nothing yet</p>
-          <p className="text-xs font-bold text-[#1B1250]/70">Be the first to share something with your community</p>
+          <p className="text-xs font-bold text-[#1B1250]/70 mb-2">Be the first to share something with your community</p>
+          <HandwrittenNote rotate={-2} className="text-[#9A63E6] text-sm">
+            tap + Linkup below to get started! ✨
+          </HandwrittenNote>
         </div>
       ) : (
         <div className="space-y-6">
           {posts.map((post, index) => renderPostCard(post, index))}
 
-          {hasMore && (
+          {hasMore ? (
             <div className="pt-2 pb-6 flex justify-center">
               <button
                 type="button"
@@ -769,6 +794,18 @@ export default function HomePage() {
               >
                 Load more
               </button>
+            </div>
+          ) : (
+            /* Home Feed Footer with Mascot & Dehradun Touch */
+            <div className="pt-6 pb-4 flex flex-col items-center justify-center gap-2 text-center select-none opacity-90">
+              <div className="flex items-center gap-2.5">
+                <CloudSticker size={26} />
+                <Mascot size={36} mood="happy" waving />
+                <ChaiCupSticker size={26} />
+              </div>
+              <HandwrittenNote rotate={-1} color="#1B1250" className="text-sm sm:text-base">
+                you're all caught up on dehradun! 🏔️✨
+              </HandwrittenNote>
             </div>
           )}
         </div>

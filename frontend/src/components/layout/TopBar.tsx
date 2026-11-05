@@ -1,12 +1,14 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Bell, MapPin, ChevronDown, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
+import { DehradunHills } from '../neo/Decorations';
 
 export default function TopBar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -24,18 +26,41 @@ export default function TopBar() {
     return () => clearInterval(interval);
   }, []);
 
+  // Active tab-specific color for the header accent/blob:
+  // Home = pink, Rent = orange, Buddy = purple, Forums = teal, Messages = yellow
+  const getTabColor = () => {
+    const p = location.pathname;
+    if (p.startsWith('/rent')) return '#E8622B';
+    if (p.startsWith('/buddy')) return '#9A63E6';
+    if (p.startsWith('/forums')) return '#2FA3B5';
+    if (p.startsWith('/messages')) return '#FFD41F';
+    return '#FF5C8A'; // default / home
+  };
+  const tabColor = getTabColor();
+
   // Display initial: fallback to 'A' as specified in design brief if no user name/email
   const userInitial = user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'A';
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-[#F6FBD4] z-50 border-b-3 border-[#1B1250] shadow-[0_2px_0_#1B1250]">
-      <div className="max-w-[480px] mx-auto flex items-center justify-between h-full px-4">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-[#F6FBD4] z-50 border-b-3 border-[#1B1250] shadow-[0_2px_0_#1B1250] overflow-hidden">
+      {/* Dehradun Mountain Hills silhouette behind header in light purple tint */}
+      <div className="absolute inset-x-0 bottom-0 pointer-events-none z-0">
+        <DehradunHills />
+      </div>
+
+      {/* Header tab-colored ambient glow/blob that takes current tab's color */}
+      <div
+        className="absolute -top-8 left-1/4 w-32 h-16 rounded-full pointer-events-none filter blur-xl opacity-40 transition-colors duration-300 z-0"
+        style={{ backgroundColor: tabColor }}
+      />
+
+      <div className="max-w-[480px] mx-auto flex items-center justify-between h-full px-4 relative z-10">
         {/* YELO Wordmark: Chunky and lime-outlined on navy sticker */}
         <Link
           to="/"
           className="flex items-center select-none active:translate-x-0.5 active:translate-y-0.5 transition-transform"
         >
-          <div className="bg-[#1B1250] text-[#C5F030] px-3 py-1 rounded-[12px] border-2.5 border-[#C5F030] shadow-[2px_3px_0_#1B1250] flex items-center justify-center">
+          <div className="bg-[#1B1250] text-[#C5F030] px-3 py-1 rounded-[12px] border-2.5 border-[#C5F030] shadow-[2px_3px_0_#1B1250] flex items-center justify-center relative">
             <span
               className="font-display font-black text-xl tracking-tight leading-none"
               style={{
@@ -45,6 +70,11 @@ export default function TopBar() {
             >
               YELO
             </span>
+            {/* Small tab-colored dot in the wordmark corner */}
+            <span
+              className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-[#1B1250] transition-colors duration-300"
+              style={{ backgroundColor: tabColor }}
+            />
           </div>
         </Link>
 
@@ -57,7 +87,7 @@ export default function TopBar() {
 
         {/* Actions: Circular Bell & Avatar */}
         <div className="flex items-center gap-2.5">
-          {/* Circular Bell Button with Navy Outline */}
+          {/* Circular Bell Button with Navy Outline & Pink Notification Dot */}
           <button
             onClick={() => navigate('/notifications')}
             className="relative w-9 h-9 rounded-full bg-white hover:bg-[#EAE4FB] border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] flex items-center justify-center transition-all duration-150 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
@@ -66,7 +96,7 @@ export default function TopBar() {
             <Bell size={18} strokeWidth={2.5} className="text-[#1B1250]" aria-hidden="true" />
             {unreadCount > 0 && (
               <span
-                className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-[#E8622B] text-white text-[10px] font-black rounded-full border-2 border-[#1B1250] flex items-center justify-center shadow-[1px_1px_0_#1B1250]"
+                className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-[#FF5C8A] text-white text-[10px] font-black rounded-full border-2 border-[#1B1250] flex items-center justify-center shadow-[1px_1px_0_#1B1250] animate-bounce"
                 aria-hidden="true"
               >
                 {unreadCount > 9 ? '9+' : unreadCount}

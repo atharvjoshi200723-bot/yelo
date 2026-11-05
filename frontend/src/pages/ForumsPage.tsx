@@ -4,6 +4,12 @@ import api from '../lib/api';
 import { College } from '../types';
 import { TrendingUp, Users, ArrowRight } from 'lucide-react';
 import { ErrorState, ListSkeleton } from '../components/ui/FeedbackStates';
+import {
+  WavyHighlight,
+  DoodleStar,
+  DoodleSquiggle,
+  HandwrittenNote,
+} from '../components/neo/Decorations';
 
 export default function ForumsPage() {
   const [colleges, setColleges] = useState<College[]>([]);
@@ -52,14 +58,23 @@ export default function ForumsPage() {
 
   return (
     <div className="w-full relative pb-14">
-      {/* Neo-Brutalist Heading with Yellow Highlight on "on campus?" */}
+      {/* Neo-Brutalist Heading with Wavy Highlight on "on campus?" */}
       <div className="mb-5 pt-1">
-        <h1 className="font-display font-black text-3xl sm:text-4xl text-[#1B1250] tracking-tight leading-[1.08]">
-          What's happening <br />
-          <span className="inline-block bg-[#FFD41F] text-[#1B1250] border-2.5 border-[#1B1250] shadow-[2px_3px_0_#1B1250] px-3 py-0.5 rounded-[10px] -rotate-1 mt-1">
-            on campus?
-          </span>
-        </h1>
+        <div className="flex items-start justify-between">
+          <h1 className="font-display font-black text-3xl sm:text-4xl text-[#1B1250] tracking-tight leading-[1.08]">
+            What's happening <br />
+            <span className="inline-flex items-center gap-2 mt-1">
+              <WavyHighlight>on campus?</WavyHighlight>
+              <DoodleStar color="teal" size={24} rotate={15} />
+            </span>
+          </h1>
+          <div className="hidden xs:flex flex-col items-end pt-1">
+            <HandwrittenNote rotate={-3} className="text-[#2FA3B5]">
+              campus tea ☕
+            </HandwrittenNote>
+            <DoodleSquiggle color="#2FA3B5" width={44} height={12} className="mt-0.5" />
+          </div>
+        </div>
       </div>
 
       {/* College Tabs: Scrollable Chip Row (Selected = Lime) */}
@@ -86,10 +101,10 @@ export default function ForumsPage() {
       {/* Floating White Notification Card: Live Campus Signal */}
       <div className="bg-white border-3 border-[#1B1250] rounded-[24px] p-4.5 shadow-[0_12px_32px_-4px_rgba(27,18,80,0.18)] mb-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3.5 min-w-0">
-          {/* Pulsing Green Dot */}
+          {/* Pulsing Pink Dot (New Accent Color) */}
           <div className="relative flex h-3.5 w-3.5 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3F8A12] opacity-75" />
-            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#3F8A12] border-2 border-[#1B1250]" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF5C8A] opacity-75" />
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#FF5C8A] border-2 border-[#1B1250]" />
           </div>
 
           <div className="min-w-0">

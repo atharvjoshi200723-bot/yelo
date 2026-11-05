@@ -1,5 +1,6 @@
 import { AlertTriangle, RefreshCw, Inbox, Search, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Mascot, ChaiCupSticker, CloudSticker } from '../neo/Decorations';
 
 interface ErrorStateProps {
   title?: string;
@@ -58,26 +59,19 @@ interface EmptyStateProps {
 export function EmptyState({ icon, emoji, title, description, action }: EmptyStateProps) {
   return (
     <div className="text-center py-16 px-4">
-      {/* Candy-ball cluster decorations */}
-      <div className="flex items-center justify-center gap-2 mb-5">
-        <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
-          <circle cx="18" cy="18" r="17" fill="#E8622B" stroke="#1B1250" strokeWidth="2.5" />
-          <circle cx="11" cy="12" r="4" fill="white" fillOpacity="0.35" />
-        </svg>
-        <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
-          <circle cx="22" cy="22" r="21" fill="#FFD41F" stroke="#1B1250" strokeWidth="2.5" />
-          <circle cx="13" cy="14" r="5" fill="white" fillOpacity="0.35" />
-        </svg>
-        <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
-          <circle cx="18" cy="18" r="17" fill="#2FA3B5" stroke="#1B1250" strokeWidth="2.5" />
-          <circle cx="11" cy="12" r="4" fill="white" fillOpacity="0.35" />
-        </svg>
+      {/* Mascot & Dehradun touches */}
+      <div className="flex items-center justify-center gap-2.5 mb-4">
+        <CloudSticker size={28} />
+        <Mascot size={46} mood="wink" waving />
+        <ChaiCupSticker size={28} />
       </div>
 
-      {/* Icon / emoji fallback */}
-      <div className="w-16 h-16 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[20px] shadow-neo flex items-center justify-center mx-auto mb-4">
-        {icon || (emoji ? <span className="text-3xl">{emoji}</span> : <Inbox size={28} className="text-[#1B1250]" />)}
-      </div>
+      {/* Icon / emoji fallback (if custom icon provided) */}
+      {(icon || (emoji && emoji !== '📦' && emoji !== '🔍')) && (
+        <div className="w-14 h-14 bg-[#F6FBD4] border-2.5 border-[#1B1250] rounded-[18px] shadow-neo flex items-center justify-center mx-auto mb-3">
+          {icon || <span className="text-2xl">{emoji}</span>}
+        </div>
+      )}
 
       <h3 className="font-display font-black text-xl text-[#1B1250] uppercase tracking-wide mb-2">{title}</h3>
       {description && (

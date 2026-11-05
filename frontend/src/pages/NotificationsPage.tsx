@@ -4,6 +4,13 @@ import api from '../lib/api';
 import { Notification } from '../types';
 import { Bell, UserPlus, MessageCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import {
+  WavyHighlight,
+  DoodleStar,
+  HandwrittenNote,
+  Mascot,
+  CloudSticker,
+} from '../components/neo/Decorations';
 
 function getNotificationIcon(type: string) {
   switch (type) {
@@ -170,36 +177,51 @@ export default function NotificationsPage() {
   return (
     <div className="max-w-lg mx-auto px-4 pt-6 pb-24" style={{ backgroundColor: '#EAE4FB', minHeight: '100vh' }}>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="w-10 h-10 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo flex items-center justify-center flex-shrink-0 hover:shadow-neo-pressed transition-all"
-        >
-          <ArrowLeft size={18} className="text-[#1B1250]" />
-        </button>
-        <h1 className="font-display font-black text-2xl text-[#1B1250]">Notifications</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 rounded-full bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo flex items-center justify-center flex-shrink-0 hover:shadow-neo-pressed active:translate-x-[2px] active:translate-y-[2px] transition-all"
+          >
+            <ArrowLeft size={18} className="text-[#1B1250]" />
+          </button>
+          <h1 className="font-display font-black text-2xl text-[#1B1250]">
+            <WavyHighlight>Notifications</WavyHighlight>
+          </h1>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <DoodleStar color="pink" size={22} rotate={15} />
+          <HandwrittenNote rotate={-2} className="text-[#9A63E6] text-sm hidden xs:inline-flex">
+            stay posted!
+          </HandwrittenNote>
+        </div>
       </div>
 
       {notifications.length === 0 ? (
-        /* Empty state */
-        <div className="flex flex-col items-center py-16 text-center">
-          <div className="w-20 h-20 rounded-[22px] border-3 border-[#1B1250] shadow-neo bg-[#F6FBD4] flex items-center justify-center mb-5">
-            <span className="text-4xl">🔔</span>
+        /* Empty state with Mascot & Dehradun Cloud */
+        <div className="flex flex-col items-center py-16 text-center bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[28px] shadow-neo-card p-8 -rotate-1">
+          <div className="flex items-center justify-center gap-2.5 mb-4">
+            <CloudSticker size={30} />
+            <Mascot size={52} mood="wink" waving />
           </div>
-          <p className="font-display font-black text-xl text-[#1B1250] mb-2">No notifications yet</p>
-          <p className="text-sm font-bold text-[#1B1250]/60">You're all caught up!</p>
+          <p className="font-display font-black text-2xl text-[#1B1250] mb-2">No notifications yet</p>
+          <p className="text-sm font-bold text-[#1B1250]/60 mb-2">You're all caught up!</p>
+          <HandwrittenNote rotate={-1} className="text-[#9A63E6] text-sm">
+            check back later for fresh updates ✨
+          </HandwrittenNote>
         </div>
       ) : (
         <div className="space-y-4">
           {notifications.map((notif, idx) => {
             const route = getNotificationRoute(notif);
             const rotate = idx % 2 === 0 ? '-rotate-1' : 'rotate-1';
+            const staggerClass = `stagger-${Math.min((idx % 5) + 1, 5)}`;
             return (
               <button
                 key={notif.id}
                 onClick={() => handleClick(notif)}
                 disabled={!route}
-                className={`w-full text-left bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[24px] shadow-[4px_5px_0_#1B1250] p-4 transition-all duration-200 hover:rotate-0 ${rotate} ${route ? 'cursor-pointer' : 'cursor-default'}`}
+                className={`w-full text-left bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[24px] shadow-[4px_5px_0_#1B1250] p-4 transition-all duration-200 hover:rotate-0 animate-sticker-slap ${staggerClass} ${rotate} ${route ? 'cursor-pointer' : 'cursor-default'}`}
               >
                 <div className="flex items-start gap-3">
                   {getIconCircle(notif.type)}
@@ -207,7 +229,7 @@ export default function NotificationsPage() {
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-bold text-sm text-[#1B1250] line-clamp-1">{notif.title}</p>
                       {!notif.is_read && (
-                        <span className="w-2.5 h-2.5 bg-[#C5F030] border-2 border-[#1B1250] rounded-full flex-shrink-0 animate-bounce" />
+                        <span className="w-2.5 h-2.5 bg-[#FF5C8A] border-2 border-[#1B1250] rounded-full flex-shrink-0 animate-bounce" />
                       )}
                     </div>
                     <p className="font-bold text-sm text-[#1B1250]/70 mt-0.5 line-clamp-2">{notif.message}</p>

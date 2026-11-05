@@ -232,8 +232,8 @@ export default function LinkupDetailPage() {
             </span>
           </div>
           <div className="flex items-center gap-3 text-[#1B1250]/50 text-xs font-bold">
-            <span className="flex items-center gap-1">
-              <Heart size={14} /> {Math.max(0, post.likes_count ?? 0)}
+            <span className="flex items-center gap-1 text-[#FF5C8A]">
+              <Heart size={14} className="fill-[#FF5C8A]" /> {Math.max(0, post.likes_count ?? 0)}
             </span>
             <span className="flex items-center gap-1">
               <MessageCircle size={14} /> {post.comments_count ?? 0}

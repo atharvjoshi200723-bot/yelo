@@ -6,7 +6,15 @@ import { BuddyProfile, BuddyRequest } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { Star, MapPin, CheckCircle, ArrowLeft, ChevronRight, UserPlus, Search, Send, MessageCircle } from 'lucide-react';
 import { ErrorState, FeedSkeleton } from '../components/ui/FeedbackStates';
-import { CandyBall } from '../components/neo/Decorations';
+import {
+  CandyBall,
+  WavyHighlight,
+  DoodleStar,
+  DoodleSquiggle,
+  HandwrittenNote,
+  Mascot,
+  ChaiCupSticker,
+} from '../components/neo/Decorations';
 
 const ACTIVITIES = [
   { name: 'Coffee', emoji: '☕', bg: 'bg-[#FFD41F]' },
@@ -186,15 +194,24 @@ export default function BuddyPage() {
 
             {/* Heading & Subtitle */}
             <div className="mb-8 relative z-20">
-              <h1
-                className="font-display font-black text-3xl sm:text-4xl text-white tracking-tight leading-[1.08] mb-3"
-                style={{ textShadow: '2px 2px 0 #1B1250' }}
-              >
-                What do you <br />
-                <span className="inline-block bg-[#FFD41F] text-[#1B1250] border-2.5 border-[#1B1250] shadow-[2px_3px_0_#1B1250] px-3 py-0.5 rounded-[10px] -rotate-1">
-                  want to do?
-                </span>
-              </h1>
+              <div className="flex items-start justify-between">
+                <h1
+                  className="font-display font-black text-3xl sm:text-4xl text-white tracking-tight leading-[1.08] mb-3"
+                  style={{ textShadow: '2px 2px 0 #1B1250' }}
+                >
+                  What do you <br />
+                  <span className="inline-flex items-center gap-2 mt-1">
+                    <WavyHighlight>want to do?</WavyHighlight>
+                    <DoodleStar color="yellow" size={24} rotate={15} />
+                  </span>
+                </h1>
+                <div className="hidden xs:flex flex-col items-end pt-1">
+                  <HandwrittenNote rotate={-3} className="text-[#FFD41F] drop-shadow-[1px_1px_0_#1B1250]">
+                    hangout vibes ✨
+                  </HandwrittenNote>
+                  <DoodleSquiggle color="#FFD41F" width={48} height={12} className="mt-0.5" />
+                </div>
+              </div>
               <p className="text-white/95 font-bold text-sm sm:text-base tracking-wide" style={{ textShadow: '1px 1px 0 rgba(27,18,80,0.5)' }}>
                 Find someone nearby or offer your time.
               </p>
@@ -325,8 +342,9 @@ export default function BuddyPage() {
           ) : buddies.length === 0 ? (
             /* Empty state */
             <div className="text-center py-14 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] p-8 -rotate-1">
-              <div className="w-16 h-16 rounded-full bg-[#C5F030] border-3 border-[#1B1250] shadow-[3px_3px_0_#1B1250] flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">👥</span>
+              <div className="flex items-center justify-center gap-2.5 mb-4">
+                <ChaiCupSticker size={30} />
+                <Mascot size={48} mood="happy" waving />
               </div>
               <p className="font-display font-black text-2xl text-[#1B1250] mb-2">No one found</p>
               <p className="text-xs font-bold text-[#1B1250]/70 mb-5">Try a different filter or check back later</p>
@@ -344,12 +362,13 @@ export default function BuddyPage() {
                 const rotation = index % 2 === 0 ? '-rotate-1 hover:rotate-0' : 'rotate-1 hover:rotate-0';
                 // Alternating avatar ring colour: orange for even, teal for odd
                 const ringColor = index % 2 === 0 ? 'ring-[#E8622B]' : 'ring-[#2FA3B5]';
+                const staggerClass = `stagger-${Math.min((index % 5) + 1, 5)}`;
 
                 return (
                   <Link
                     key={buddy.id}
                     to={`/buddy/${buddy.id}`}
-                    className={`block bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[24px] p-5 shadow-[4px_6px_0_#1B1250] hover:shadow-[6px_8px_0_#1B1250] transition-all duration-200 ${rotation}`}
+                    className={`block bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[24px] p-5 shadow-[4px_6px_0_#1B1250] hover:shadow-[6px_8px_0_#1B1250] transition-all duration-200 animate-sticker-slap ${staggerClass} ${rotation}`}
                   >
                     <div className="flex gap-4">
                       {/* Avatar in sticker frame */}

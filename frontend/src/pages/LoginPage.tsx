@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
 import { getGoogleSignInUrl, googleRedirectUrl, googleErrorMessage } from '../lib/googleAuth';
+import { Mascot, DoodleStar, HandwrittenNote } from '../components/neo/Decorations';
 
 function GoogleLogin({ onError }: { onError: (message: string) => void }) {
   const [connecting, setConnecting] = useState(false);
@@ -110,11 +111,15 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md relative z-10">
         {/* YELO wordmark */}
-        <div className="text-center mb-6">
-          <div className="inline-block bg-[#1B1250] rounded-[20px] border-3 border-[#1B1250] shadow-neo px-7 py-3 mb-4">
+        <div className="text-center mb-6 relative">
+          <div className="inline-flex items-center gap-2 bg-[#1B1250] rounded-[20px] border-3 border-[#1B1250] shadow-neo px-7 py-3 mb-3 relative">
             <span className="font-display font-black text-5xl text-[#C5F030] tracking-tight">YELO</span>
+            <DoodleStar color="pink" size={26} rotate={15} className="absolute -top-3 -right-3" />
           </div>
-          <p className="text-white font-bold text-sm opacity-80">Welcome back — sign in</p>
+          <div className="flex items-center justify-center gap-2">
+            <Mascot size={32} mood="happy" waving />
+            <p className="text-white font-bold text-sm opacity-90">Welcome back — sign in</p>
+          </div>
         </div>
 
         {/* Cream sticker card */}

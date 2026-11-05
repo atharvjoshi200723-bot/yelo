@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { MapPin, ArrowLeft, Compass } from 'lucide-react';
 import { useEffect } from 'react';
+import { Mascot, DoodleStar, HandwrittenNote, CloudSticker } from '../components/neo/Decorations';
 
 const SUGGESTIONS = [
   { label: 'Home Feed', path: '/', emoji: '🏠' },
@@ -37,11 +38,14 @@ export default function NotFoundPage() {
         <circle cx="12" cy="12" r="4" fill="white" fillOpacity="0.3" />
       </svg>
 
-      {/* Big emoji in cream sticker circle */}
-      <div className="relative mb-8 animate-pop-in">
-        <div className="w-24 h-24 bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo rounded-[26px] flex items-center justify-center">
+      {/* Big emoji in cream sticker circle with Mascot */}
+      <div className="relative mb-6 animate-pop-in flex items-center justify-center gap-3">
+        <CloudSticker size={32} />
+        <div className="w-24 h-24 bg-[#F6FBD4] border-3 border-[#1B1250] shadow-neo rounded-[26px] flex items-center justify-center relative">
           <span className="text-4xl" role="img" aria-label="Map">🗺️</span>
+          <DoodleStar color="pink" size={24} rotate={15} className="absolute -top-2.5 -right-2.5" />
         </div>
+        <Mascot size={42} mood="wink" waving />
       </div>
 
       {/* Heading */}

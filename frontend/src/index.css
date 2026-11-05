@@ -28,6 +28,7 @@
   --orange: #E8622B;
   --teal: #2FA3B5;
   --yellow: #FFD41F;
+  --pink: #FF5C8A;
   --approve: #3F8A12;
   --deny: #FF9A1F;
   --navy: #1B1250;
@@ -87,6 +88,17 @@ body {
   font-family: 'Rubik', 'Bricolage Grotesque', system-ui, sans-serif;
   letter-spacing: -0.03em;
 }
+
+.font-hand {
+  font-family: 'Caveat Brush', cursive;
+}
+
+/* Stagger animations for sticker slap-in */
+.stagger-1 { animation-delay: 0.04s; }
+.stagger-2 { animation-delay: 0.08s; }
+.stagger-3 { animation-delay: 0.12s; }
+.stagger-4 { animation-delay: 0.16s; }
+.stagger-5 { animation-delay: 0.20s; }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
