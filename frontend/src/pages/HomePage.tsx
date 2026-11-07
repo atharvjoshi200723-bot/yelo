@@ -860,7 +860,7 @@ export default function HomePage() {
           aria-label="Create Linkup"
         >
           <Plus size={18} strokeWidth={3} className="shrink-0" />
-          <span>+ Linkup</span>
+          <span>Linkup</span>
         </button>
       </div>
     </div>
