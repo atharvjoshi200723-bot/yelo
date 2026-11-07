@@ -46,3 +46,8 @@ export async function getPublicProfile(req: AuthRequest, res: Response): PR {
   const profile = await userService.getPublicProfile(userId);
   return res.json({ profile });
 }
+
+export async function deleteAccount(req: AuthRequest, res: Response): PR {
+  await userService.deleteAccount(req.user!.id);
+  return res.json({ message: 'Account deleted successfully' });
+}

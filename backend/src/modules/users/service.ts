@@ -1,4 +1,4 @@
-import { query } from '../../lib/db';
+import { query, pool } from '../../lib/db';
 import { AppError } from '../../middleware/errorHandler';
 import { UpdateProfileInput } from '../auth/validators';
 
@@ -73,4 +73,43 @@ export async function getPublicProfile(userId: string) {
   );
   if (result.rows.length === 0) throw new AppError(404, 'User not found');
   return result.rows[0];
+}
+
+export async function deleteAccount(userId: string) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM google_accounts WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM notifications WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM blocks WHERE blocker_id = $1 OR blocked_id = $1', [userId]);
+    await client.query('DELETE FROM reports WHERE reporter_id = $1 OR (target_type = \'user\' AND target_id = $1)', [userId]);
+    await client.query('DELETE FROM forum_upvotes WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM forum_comments WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM forum_posts WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM social_likes WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM social_saves WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM social_comments WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM plan_participants WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM plan_join_requests WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM social_posts WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM transactions WHERE payer_id = $1 OR payee_id = $1', [userId]);
+    await client.query('DELETE FROM rentals WHERE renter_id = $1 OR owner_id = $1', [userId]);
+    await client.query('DELETE FROM rental_requests WHERE requester_id = $1 OR owner_id = $1', [userId]);
+    await client.query('DELETE FROM rental_listings WHERE owner_id = $1', [userId]);
+    await client.query('DELETE FROM buddy_sessions WHERE requester_id = $1 OR provider_id = $1', [userId]);
+    await client.query('DELETE FROM buddy_requests WHERE requester_id = $1 OR provider_id = $1', [userId]);
+    await client.query('DELETE FROM buddy_profiles WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM messages WHERE sender_id = $1', [userId]);
+    await client.query('DELETE FROM conversation_members WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM reviews WHERE reviewer_id = $1 OR reviewed_user_id = $1', [userId]);
+    await client.query('DELETE FROM profiles WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM users WHERE id = $1', [userId]);
+    await client.query('COMMIT');
+    return { success: true };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }

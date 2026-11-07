@@ -9,6 +9,7 @@ export const userRoutes = Router();
 
 userRoutes.get('/me', authenticate, asyncHandler(controller.getProfile));
 userRoutes.put('/me', authenticate, profileUpdateLimiter, asyncHandler(controller.updateProfile));
+userRoutes.delete('/me', authenticate, asyncHandler(controller.deleteAccount));
 userRoutes.post('/me/avatar', authenticate, uploadLimiter, upload.single('avatar'), asyncHandler(controller.uploadAvatar));
 userRoutes.get('/:userId', authenticate, asyncHandler(controller.getPublicProfile));
 userRoutes.post('/:userId/block', authenticate, asyncHandler(controller.blockUser));

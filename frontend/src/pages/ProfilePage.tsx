@@ -3,20 +3,37 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { User, Review } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { Star, MapPin, GraduationCap, Settings, ChevronRight } from 'lucide-react';
+import { Star, MapPin, GraduationCap, Settings, ChevronRight, Trash2, AlertTriangle, X } from 'lucide-react';
 import { ErrorState, FeedSkeleton } from '../components/ui/FeedbackStates';
 
 export default function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, logout } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [requestingChat, setRequestingChat] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const navigate = useNavigate();
   const isOwnProfile = !userId || userId === currentUser?.id;
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.delete('/users/me');
+      logout();
+      navigate('/login');
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      setDeleteError(apiErr.response?.data?.error || 'Failed to delete account. Please try again.');
+      setDeleting(false);
+    }
+  };
 
   // "Request to chat" opens (or reuses) a direct conversation with this user.
   const requestChat = async () => {
@@ -286,6 +303,83 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* ── Danger Zone / Delete Account (Visible only on own profile) ── */}
+      {viewingSelf && (
+        <div className="bg-white border-3 border-[#1B1250] rounded-[26px] shadow-[6px_8px_0_#1B1250] p-6 space-y-3">
+          <h2 className="font-display font-black text-xs text-[#E8622B] uppercase tracking-widest flex items-center gap-1.5">
+            <Trash2 size={14} /> Danger Zone
+          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+            <div>
+              <p className="text-sm font-black text-[#1B1250]">Delete Account</p>
+              <p className="text-xs font-bold text-[#1B1250]/60">
+                Permanently delete your profile, listings, linkups, and all associated data.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="bg-[#E8622B] hover:bg-[#d45320] text-white border-2.5 border-[#1B1250] shadow-[3px_3px_0_#1B1250] rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-wider active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all shrink-0 cursor-pointer text-center"
+            >
+              Delete Account
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1B1250]/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[28px] shadow-[6px_8px_0_#1B1250] p-6 max-w-sm w-full relative">
+            <button
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeleteError(null);
+              }}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <X size={16} strokeWidth={3} />
+            </button>
+
+            <div className="w-12 h-12 rounded-full bg-[#E8622B]/20 border-2.5 border-[#E8622B] flex items-center justify-center text-[#E8622B] mb-3">
+              <AlertTriangle size={24} strokeWidth={2.5} />
+            </div>
+
+            <h3 className="font-display font-black text-xl text-[#1B1250] mb-1">Delete Account?</h3>
+            <p className="text-xs font-bold text-[#1B1250]/70 mb-5 leading-relaxed">
+              Are you sure? This will permanently delete your account, rentals, linkups, and profile. <strong className="text-[#E8622B]">This action cannot be undone.</strong>
+            </p>
+
+            {deleteError && (
+              <div className="mb-4 bg-[#E8622B] text-white border-2 border-[#1B1250] rounded-[16px] px-3.5 py-2 text-xs font-black shadow-[2px_2px_0_#1B1250]">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteError(null);
+                }}
+                disabled={deleting}
+                className="flex-1 bg-white hover:bg-gray-100 text-[#1B1250] border-3 border-[#1B1250] shadow-[3px_3px_0_#1B1250] rounded-full py-2.5 text-xs font-black uppercase transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="flex-1 bg-[#E8622B] hover:bg-[#d45320] text-white border-3 border-[#1B1250] shadow-[3px_3px_0_#1B1250] rounded-full py-2.5 text-xs font-black uppercase transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {deleting ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
