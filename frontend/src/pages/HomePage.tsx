@@ -851,7 +851,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Floating Action Button: "+ Linkup" (Lime pill with navy 3px outline and hard shadow) + Quick Post */}
+      {/* Floating Action Button: "+ Linkup" (Lime pill with navy 3px outline and hard shadow) */}
       <div className="fixed right-4 sm:right-[max(1rem,calc((100vw-480px)/2+1rem))] bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] flex flex-col items-end gap-2.5 z-40">
         <button
           type="button"
@@ -861,17 +861,6 @@ export default function HomePage() {
         >
           <Plus size={18} strokeWidth={3} className="shrink-0" />
           <span>+ Linkup</span>
-        </button>
-
-        {/* Quick Post button */}
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="w-10 h-10 rounded-full bg-[#FFD41F] hover:bg-[#ffe14d] text-[#1B1250] border-2.5 border-[#1B1250] shadow-[3px_3px_0_#1B1250] flex items-center justify-center transition-all duration-150 active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#1B1250]"
-          aria-label="Create post"
-          title="Create post"
-        >
-          <Plus size={18} strokeWidth={3} />
         </button>
       </div>
     </div>
