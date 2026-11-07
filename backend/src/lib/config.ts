@@ -27,6 +27,10 @@ const googleMissing: string[] = [
   ...(googleClientSecret ? [] : ['GOOGLE_CLIENT_SECRET']),
 ];
 
+const dbUser = (process.env.DB_USER || '').trim();
+const inferredProjectRef = dbUser.startsWith('postgres.') ? dbUser.replace('postgres.', '') : '';
+const defaultSupabaseUrl = inferredProjectRef ? `https://${inferredProjectRef}.supabase.co` : '';
+
 export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -54,6 +58,11 @@ export const config = {
   upload: {
     dir: process.env.UPLOAD_DIR || './uploads',
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880', 10),
+  },
+  supabase: {
+    url: firstEnv('SUPABASE_URL') || defaultSupabaseUrl,
+    serviceKey: firstEnv('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_KEY', 'SUPABASE_ANON_KEY'),
+    bucket: firstEnv('SUPABASE_STORAGE_BUCKET') || 'uploads',
   },
   location: {
     defaultLat: parseFloat(process.env.DEFAULT_LAT || '30.3165'),

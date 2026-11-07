@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../../middleware/auth';
+import { getFileUrl } from '../../lib/upload';
 import * as userService from './service';
 import { updateProfileSchema } from '../auth/validators';
 
@@ -23,7 +24,7 @@ export async function uploadAvatar(req: AuthRequest, res: Response): PR {
   if (!req.file) {
     return res.status(400).json({ error: 'No image uploaded' });
   }
-  const imageUrl = `/uploads/profiles/${req.file.filename}`;
+  const imageUrl = getFileUrl(req.file, 'profiles');
   const profile = await userService.updateProfile(req.user!.id, { avatarUrl: imageUrl });
   return res.json({ profile, imageUrl });
 }

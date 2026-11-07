@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import sharp from 'sharp';
 import { Request, Response, NextFunction } from 'express';
+import { uploadToSupabaseStorage } from './supabaseStorage';
 
 // Use absolute path to uploads directory relative to project root
 const uploadDir = path.resolve(__dirname, '..', '..', 'uploads');
@@ -25,15 +26,24 @@ const MAX_DIMENSION = 1200; // max width/height in pixels
 const JPEG_QUALITY = 82;
 const WEBP_QUALITY = 80;
 
+export function getFolderForField(fieldname?: string): string {
+  if (fieldname === 'avatar') return 'profiles';
+  if (fieldname === 'buddyImage') return 'buddy';
+  return 'posts';
+}
+
+export function getFileUrl(file: Express.Multer.File, folder?: string): string {
+  if ((file as any)?.publicUrl) {
+    return (file as any).publicUrl;
+  }
+  const sub = folder || getFolderForField(file?.fieldname);
+  return `/uploads/${sub}/${file.filename}`;
+}
+
 const storage = multer.diskStorage({
   destination: (_req, file, cb) => {
-    if (file.fieldname === 'avatar') {
-      cb(null, path.join(uploadDir, 'profiles'));
-    } else if (file.fieldname === 'buddyImage') {
-      cb(null, path.join(uploadDir, 'buddy'));
-    } else {
-      cb(null, path.join(uploadDir, 'posts'));
-    }
+    const sub = getFolderForField(file.fieldname);
+    cb(null, path.join(uploadDir, sub));
   },
   filename: (_req, file, cb) => {
     // Save with original extension so compressImage can convert to .webp
@@ -94,32 +104,50 @@ const rawUpload = multer({
 });
 
 // Compress one already-stored multer file in place (original → .webp)
-async function compressStoredFile(file: { path: string; filename: string; mimetype: string; size: number }): Promise<void> {
+async function compressStoredFile(file: Express.Multer.File): Promise<void> {
   const inputPath = file.path;
   const outputPath = inputPath.replace(/\.[^.]+$/, '.webp');
 
   // If input is already .webp (same path), just keep it as-is
-  if (inputPath === outputPath) return;
-
-  await compressImage(inputPath, outputPath);
-  file.filename = path.basename(outputPath);
-  file.path = outputPath;
-  file.mimetype = 'image/webp';
-  file.size = fs.statSync(outputPath).size;
+  if (inputPath !== outputPath) {
+    await compressImage(inputPath, outputPath);
+    file.filename = path.basename(outputPath);
+    file.path = outputPath;
+    file.mimetype = 'image/webp';
+    file.size = fs.statSync(outputPath).size;
+  }
 }
 
-async function compressAll(files: Express.Multer.File[]): Promise<void> {
+async function processStoredFile(file: Express.Multer.File): Promise<void> {
+  // 1. Compress image to WebP
+  await compressStoredFile(file);
+
+  // 2. Upload to Supabase Storage if configured
+  const folder = getFolderForField(file.fieldname);
+  const destinationPath = `${folder}/${file.filename}`;
+
+  try {
+    const publicUrl = await uploadToSupabaseStorage(file.path, destinationPath, 'image/webp');
+    if (publicUrl) {
+      (file as any).publicUrl = publicUrl;
+      console.log(`☁️  Uploaded to Supabase Storage: ${publicUrl}`);
+    }
+  } catch (err) {
+    console.error('Image upload to Supabase Storage failed, keeping local fallback:', err);
+  }
+}
+
+async function processAll(files: Express.Multer.File[]): Promise<void> {
   for (const file of files) {
     try {
-      await compressStoredFile(file);
+      await processStoredFile(file);
     } catch (compressErr) {
-      console.error('Image compression failed, using original:', compressErr);
-      // Continue with original file if compression fails
+      console.error('Image processing failed, using original:', compressErr);
     }
   }
 }
 
-// Wrapper that adds compression after multer processing
+// Wrapper that adds compression & cloud storage after multer processing
 export const upload = {
   single(fieldName: string) {
     return (req: Request, res: Response, next: NextFunction) => {
@@ -128,7 +156,7 @@ export const upload = {
           next(err);
           return;
         }
-        await compressAll([req.file]);
+        await processAll([req.file]);
         next();
       });
     };
@@ -143,7 +171,7 @@ export const upload = {
           return;
         }
         const files = (req.files as Express.Multer.File[] | undefined) || [];
-        await compressAll(files);
+        await processAll(files);
         next();
       });
     };

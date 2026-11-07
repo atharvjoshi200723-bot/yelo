@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../../middleware/auth';
 import { uploadLimiter } from '../../middleware/rateLimit';
-import { upload } from '../../lib/upload';
+import { upload, getFileUrl } from '../../lib/upload';
 
 const router = Router();
 
@@ -16,7 +16,7 @@ router.post('/', authenticate, uploadLimiter, upload.array('images', 5), (req: R
     return res.status(400).json({ error: 'No images provided' });
   }
   // Unknown field names land in the posts/ directory (see lib/upload.ts)
-  const urls = files.map(file => `/uploads/posts/${file.filename}`);
+  const urls = files.map(file => getFileUrl(file, 'posts'));
   return res.status(201).json({ urls });
 });
 

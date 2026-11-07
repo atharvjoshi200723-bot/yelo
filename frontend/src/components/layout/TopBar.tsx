@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Bell, MapPin, ChevronDown, LogOut } from 'lucide-react';
+import { Bell, MapPin, ChevronDown, LogOut, User as UserIcon, Settings, Shield } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { DehradunHills } from '../neo/Decorations';
@@ -42,17 +42,20 @@ export default function TopBar() {
   const userInitial = user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'A';
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-[#F6FBD4] z-50 border-b-3 border-[#1B1250] shadow-[0_2px_0_#1B1250] overflow-hidden">
-      {/* Dehradun Mountain Hills silhouette behind header in light purple tint */}
-      <div className="absolute inset-x-0 bottom-0 pointer-events-none z-0">
-        <DehradunHills />
-      </div>
+    <header className="fixed top-0 left-0 right-0 h-16 bg-[#F6FBD4] z-50 border-b-3 border-[#1B1250] shadow-[0_2px_0_#1B1250]">
+      {/* Background container with overflow-hidden so silhouettes/blobs don't spill outside */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        {/* Dehradun Mountain Hills silhouette behind header in light purple tint */}
+        <div className="absolute inset-x-0 bottom-0">
+          <DehradunHills />
+        </div>
 
-      {/* Header tab-colored ambient glow/blob that takes current tab's color */}
-      <div
-        className="absolute -top-8 left-1/4 w-32 h-16 rounded-full pointer-events-none filter blur-xl opacity-40 transition-colors duration-300 z-0"
-        style={{ backgroundColor: tabColor }}
-      />
+        {/* Header tab-colored ambient glow/blob that takes current tab's color */}
+        <div
+          className="absolute -top-8 left-1/4 w-32 h-16 rounded-full filter blur-xl opacity-40 transition-colors duration-300"
+          style={{ backgroundColor: tabColor }}
+        />
+      </div>
 
       <div className="max-w-[480px] mx-auto flex items-center justify-between h-full px-4 relative z-10">
         {/* YELO Wordmark: Chunky and lime-outlined on navy sticker */}
@@ -108,14 +111,22 @@ export default function TopBar() {
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="w-9 h-9 rounded-full bg-[#1B1250] border-2.5 border-[#1B1250] ring-3 ring-[#9A63E6] shadow-[2px_2px_0_#1B1250] flex items-center justify-center transition-transform active:scale-95 select-none focus:outline-none"
+              className="w-9 h-9 rounded-full bg-[#1B1250] border-2.5 border-[#1B1250] ring-3 ring-[#9A63E6] shadow-[2px_2px_0_#1B1250] flex items-center justify-center transition-transform active:scale-95 select-none focus:outline-none overflow-hidden cursor-pointer"
               aria-label="Open profile menu"
               aria-expanded={showMenu}
               aria-haspopup="true"
             >
-              <span className="text-[#F6FBD4] font-black text-xs">
-                {userInitial}
-              </span>
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.name || 'User'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-[#F6FBD4] font-black text-xs">
+                  {userInitial}
+                </span>
+              )}
             </button>
 
             {/* Profile Dropdown Menu */}
@@ -123,24 +134,38 @@ export default function TopBar() {
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
                 <div
-                  className="absolute right-0 top-full mt-2 w-48 bg-[#F6FBD4] rounded-[20px] border-3 border-[#1B1250] shadow-[5px_6px_0_#1B1250] py-2 z-50 animate-pop-in overflow-hidden"
+                  className="absolute right-0 top-full mt-2 w-52 bg-[#F6FBD4] rounded-[20px] border-3 border-[#1B1250] shadow-[5px_6px_0_#1B1250] py-2 z-50 animate-pop-in"
                   role="menu"
                   aria-label="Profile menu"
                 >
+                  <div className="px-4 py-2 border-b-2 border-[#1B1250]/15">
+                    <p className="text-xs font-black text-[#1B1250] truncate">{user?.name || 'User'}</p>
+                    <p className="text-[10px] font-bold text-[#1B1250]/60 truncate">{user?.email}</p>
+                  </div>
                   <Link
-                    to="/profile/settings"
-                    className="block px-4 py-2 text-xs font-black text-[#1B1250] hover:bg-[#C5F030] transition-colors border-b-2 border-[#1B1250]/15"
+                    to="/profile"
+                    className="px-4 py-2.5 text-xs font-black text-[#1B1250] hover:bg-[#C5F030] transition-colors border-b-2 border-[#1B1250]/15 flex items-center gap-2"
                     onClick={() => setShowMenu(false)}
                   >
+                    <UserIcon size={14} strokeWidth={2.5} />
+                    My Profile
+                  </Link>
+                  <Link
+                    to="/profile/settings"
+                    className="px-4 py-2.5 text-xs font-black text-[#1B1250] hover:bg-[#C5F030] transition-colors border-b-2 border-[#1B1250]/15 flex items-center gap-2"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <Settings size={14} strokeWidth={2.5} />
                     Profile Settings
                   </Link>
                   {user?.role === 'admin' && (
                     <Link
                       to="/admin"
-                      className="block px-4 py-2 text-xs font-black text-[#1B1250] hover:bg-[#C5F030] transition-colors border-b-2 border-[#1B1250]/15"
+                      className="px-4 py-2.5 text-xs font-black text-[#1B1250] hover:bg-[#C5F030] transition-colors border-b-2 border-[#1B1250]/15 flex items-center gap-2"
                       onClick={() => setShowMenu(false)}
                     >
-                      Admin
+                      <Shield size={14} strokeWidth={2.5} />
+                      Admin Panel
                     </Link>
                   )}
                   <button
@@ -149,7 +174,7 @@ export default function TopBar() {
                       navigate('/login');
                       setShowMenu(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-xs font-black text-[#E8622B] hover:bg-[#E8622B]/10 transition-colors flex items-center gap-2"
+                    className="w-full text-left px-4 py-2.5 text-xs font-black text-[#E8622B] hover:bg-[#E8622B]/10 transition-colors flex items-center gap-2 cursor-pointer"
                   >
                     <LogOut size={14} strokeWidth={2.5} /> Sign out
                   </button>

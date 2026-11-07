@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../middleware/auth';
+import { getFileUrl } from '../../lib/upload';
 import * as buddyService from './service';
 import { createBuddyProfileSchema, searchBuddySchema, createBuddyRequestSchema } from './validators';
 
@@ -31,7 +32,7 @@ export async function uploadBuddyImage(req: AuthRequest, res: Response) {
   if (!req.file) {
     return res.status(400).json({ error: 'No image uploaded' });
   }
-  const imageUrl = `/uploads/buddy/${req.file.filename}`;
+  const imageUrl = getFileUrl(req.file, 'buddy');
   
   // Try to add to existing buddy profile — but if no profile exists yet
   // (user is still in onboarding flow), just return the URL.
