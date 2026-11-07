@@ -19,6 +19,15 @@ export async function getColleges(_req: AuthRequest, res: Response) {
   res.json({ colleges });
 }
 
+export async function createCollege(req: AuthRequest, res: Response) {
+  const { name, city, description } = req.body as { name?: string; city?: string; description?: string };
+  if (!name || typeof name !== 'string' || name.trim().length < 2) {
+    return res.status(400).json({ error: 'College name is required (min 2 characters)' });
+  }
+  const college = await forumService.createCollege(name, city, description);
+  res.status(201).json({ college });
+}
+
 export async function getCollege(req: AuthRequest, res: Response) {
   const slug = req.params.slug as string;
   const college = await forumService.getCollegeBySlug(slug);

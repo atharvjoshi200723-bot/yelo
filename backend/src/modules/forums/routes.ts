@@ -7,6 +7,7 @@ import { asyncHandler } from '../../lib/utils';
 const router = Router();
 
 router.get('/colleges', authenticate, asyncHandler(controller.getColleges));
+router.post('/colleges', authenticate, forumPostLimiter, asyncHandler(controller.createCollege));
 router.get('/colleges/:slug', authenticate, asyncHandler(controller.getCollege));
 router.get('/categories/:categoryId/posts', authenticate, asyncHandler(controller.getForumPosts));
 router.post('/categories/:categoryId/posts', authenticate, forumPostLimiter, asyncHandler(controller.createForumPost));

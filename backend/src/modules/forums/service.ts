@@ -7,6 +7,75 @@ export async function getColleges() {
   return result.rows;
 }
 
+const DEFAULT_CATEGORIES = [
+  { name: 'Assignments', slug: 'assignments', sort_order: 0 },
+  { name: 'Teachers', slug: 'teachers', sort_order: 1 },
+  { name: 'Exams', slug: 'exams', sort_order: 2 },
+  { name: 'Campus', slug: 'campus', sort_order: 3 },
+  { name: 'Hostel', slug: 'hostel', sort_order: 4 },
+  { name: 'Food', slug: 'food', sort_order: 5 },
+  { name: 'Events', slug: 'events', sort_order: 6 },
+  { name: 'College Life', slug: 'college-life', sort_order: 7 },
+  { name: 'Questions', slug: 'questions', sort_order: 8 },
+  { name: 'General', slug: 'general', sort_order: 9 },
+  { name: 'Off-topic', slug: 'off-topic', sort_order: 10 },
+];
+
+export async function createCollege(name: string, city: string = 'Dehradun', description?: string) {
+  const cleanName = name.trim();
+  if (!cleanName || cleanName.length < 2) {
+    throw new AppError(400, 'College name must be at least 2 characters');
+  }
+
+  // Base slug
+  let baseSlug = cleanName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  if (!baseSlug) {
+    baseSlug = 'college';
+  }
+
+  // Check if college already exists with same name or slug
+  const existing = await query(
+    'SELECT * FROM colleges WHERE LOWER(name) = LOWER($1) OR slug = $2 LIMIT 1',
+    [cleanName, baseSlug]
+  );
+
+  if (existing.rows.length > 0) {
+    return existing.rows[0];
+  }
+
+  let slug = baseSlug;
+  // Ensure unique slug
+  const slugCheck = await query('SELECT slug FROM colleges WHERE slug = $1', [slug]);
+  if (slugCheck.rows.length > 0) {
+    slug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
+  }
+
+  const result = await query(
+    `INSERT INTO colleges (name, slug, city, description, sort_order)
+     VALUES ($1, $2, $3, $4, 200)
+     RETURNING *`,
+    [cleanName, slug, city.trim() || 'Dehradun', description || `${cleanName} community forum`]
+  );
+
+  const college = result.rows[0];
+
+  // Seed default categories for this new college
+  for (const cat of DEFAULT_CATEGORIES) {
+    await query(
+      `INSERT INTO forum_categories (college_id, name, slug, sort_order)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (college_id, slug) DO NOTHING`,
+      [college.id, cat.name, cat.slug, cat.sort_order]
+    );
+  }
+
+  return college;
+}
+
 export async function getCollegeBySlug(slug: string) {
   const result = await query('SELECT * FROM colleges WHERE slug = $1', [slug]);
   if (result.rows.length === 0) throw new AppError(404, 'College not found');

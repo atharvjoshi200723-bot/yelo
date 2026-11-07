@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { College } from '../types';
-import { TrendingUp, Users, ArrowRight } from 'lucide-react';
+import { TrendingUp, Users, ArrowRight, Plus, X, GraduationCap } from 'lucide-react';
 import { ErrorState, ListSkeleton } from '../components/ui/FeedbackStates';
 import {
   WavyHighlight,
@@ -16,6 +16,41 @@ export default function ForumsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeCollege, setActiveCollege] = useState<string>('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newCollegeName, setNewCollegeName] = useState('');
+  const [newCollegeCity, setNewCollegeCity] = useState('Dehradun');
+  const [addingCollege, setAddingCollege] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
+  const handleAddCollege = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCollegeName.trim() || newCollegeName.trim().length < 2) {
+      setAddError('Please enter a valid college name (at least 2 characters)');
+      return;
+    }
+    setAddingCollege(true);
+    setAddError(null);
+    try {
+      const res = await api.post('/forums/colleges', {
+        name: newCollegeName.trim(),
+        city: newCollegeCity.trim() || 'Dehradun',
+      });
+      const created = res.data.college as College;
+      setColleges(prev => {
+        const exists = prev.some(c => c.id === created.id || c.slug === created.slug);
+        return exists ? prev : [...prev, created];
+      });
+      setActiveCollege(created.slug);
+      setShowAddModal(false);
+      setNewCollegeName('');
+      setNewCollegeCity('Dehradun');
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      setAddError(apiErr.response?.data?.error || 'Failed to create college forum. Please try again.');
+    } finally {
+      setAddingCollege(false);
+    }
+  };
 
   useEffect(() => {
     api.get('/forums/colleges').then(res => {
@@ -78,7 +113,7 @@ export default function ForumsPage() {
       </div>
 
       {/* College Tabs: Scrollable Chip Row (Selected = Lime) */}
-      <div className="flex gap-2.5 mb-6 overflow-x-auto no-scrollbar py-2 px-1 -mx-2 scroll-smooth">
+      <div className="flex items-center gap-2.5 mb-6 overflow-x-auto no-scrollbar py-2 px-1 -mx-2 scroll-smooth">
         {colleges.map((college, index) => {
           const isSelected = activeCollege === college.slug;
           return (
@@ -96,6 +131,16 @@ export default function ForumsPage() {
             </button>
           );
         })}
+
+        {/* Not your college? / Add College Button */}
+        <button
+          type="button"
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 rounded-full text-xs font-black whitespace-nowrap border-3 border-dashed border-[#1B1250] bg-white hover:bg-[#F6FBD4] text-[#9A63E6] shadow-[2px_3px_0_#1B1250] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center gap-1.5 shrink-0 select-none cursor-pointer"
+        >
+          <Plus size={14} strokeWidth={3} />
+          <span>Not your college?</span>
+        </button>
       </div>
 
       {/* Floating White Notification Card: Live Campus Signal */}
@@ -259,6 +304,90 @@ export default function ForumsPage() {
           ))}
         </div>
       </div>
+
+      {/* Add College Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1B1250]/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#F6FBD4] border-3 border-[#1B1250] rounded-[28px] shadow-[6px_8px_0_#1B1250] p-6 max-w-sm w-full relative">
+            <button
+              onClick={() => {
+                setShowAddModal(false);
+                setNewCollegeName('');
+                setAddError(null);
+              }}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] flex items-center justify-center hover:bg-[#FF5C8A] hover:text-white transition-colors cursor-pointer"
+            >
+              <X size={16} strokeWidth={3} />
+            </button>
+
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">🎓</span>
+              <h3 className="font-display font-black text-xl text-[#1B1250]">Add Your College</h3>
+            </div>
+            <p className="text-xs font-bold text-[#1B1250]/70 mb-4">
+              Don't see your campus? Create a dedicated forum section for your college!
+            </p>
+
+            {addError && (
+              <div className="mb-4 bg-[#FF5C8A] text-white border-2 border-[#1B1250] rounded-[16px] px-3.5 py-2 text-xs font-black shadow-[2px_2px_0_#1B1250]">
+                {addError}
+              </div>
+            )}
+
+            <form onSubmit={handleAddCollege} className="space-y-4">
+              <div>
+                <label className="block text-xs font-black uppercase text-[#1B1250] mb-1.5">
+                  College / University Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Graphic Era, IIT Roorkee, UPES..."
+                  value={newCollegeName}
+                  onChange={(e) => setNewCollegeName(e.target.value)}
+                  maxLength={100}
+                  className="w-full bg-white border-3 border-[#1B1250] rounded-[16px] px-3.5 py-2.5 text-sm font-bold text-[#1B1250] shadow-[2px_2px_0_#1B1250] focus:outline-none focus:ring-2 focus:ring-[#9A63E6]"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase text-[#1B1250] mb-1.5">
+                  City / Location
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Dehradun"
+                  value={newCollegeCity}
+                  onChange={(e) => setNewCollegeCity(e.target.value)}
+                  maxLength={50}
+                  className="w-full bg-white border-3 border-[#1B1250] rounded-[16px] px-3.5 py-2.5 text-sm font-bold text-[#1B1250] shadow-[2px_2px_0_#1B1250] focus:outline-none focus:ring-2 focus:ring-[#9A63E6]"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setNewCollegeName('');
+                    setAddError(null);
+                  }}
+                  className="flex-1 bg-white hover:bg-gray-100 text-[#1B1250] border-3 border-[#1B1250] shadow-[3px_3px_0_#1B1250] rounded-full py-2.5 text-xs font-black uppercase transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addingCollege || !newCollegeName.trim()}
+                  className="flex-1 bg-[#C5F030] hover:bg-[#bcf01a] text-[#1B1250] border-3 border-[#1B1250] shadow-[3px_3px_0_#1B1250] rounded-full py-2.5 text-xs font-black uppercase transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {addingCollege ? 'Creating...' : 'Create Forum ✨'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
