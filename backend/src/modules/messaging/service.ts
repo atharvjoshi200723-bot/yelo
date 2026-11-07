@@ -1,5 +1,6 @@
 import { query } from '../../lib/db';
 import { AppError } from '../../middleware/errorHandler';
+import { createNotification } from '../notifications/service';
 import { Server as SocketServer } from 'socket.io';
 
 let io: SocketServer;
@@ -144,10 +145,12 @@ export async function sendMessage(conversationId: string, senderId: string, cont
   // Create notifications
   for (const member of otherMembers.rows) {
     const memberId = (member as { user_id: string }).user_id;
-    await query(
-      `INSERT INTO notifications (user_id, type, title, message, data)
-       VALUES ($1, 'message', 'New message', $2, $3)`,
-      [memberId, `${sender.name}: ${content.substring(0, 100)}`, JSON.stringify({ conversationId })]
+    await createNotification(
+      memberId,
+      'message',
+      'New message',
+      `${sender.name}: ${content.substring(0, 100)}`,
+      { conversationId }
     );
   }
 

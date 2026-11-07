@@ -45,15 +45,19 @@ export async function createReport(
 
 export async function getReports(status?: string, page: number = 1, limit: number = 20) {
   const offset = (page - 1) * limit;
-  let queryStr = 'SELECT * FROM reports';
+  let queryStr = `
+    SELECT r.*, p.name as reporter_name, u.email as reporter_email
+    FROM reports r
+    LEFT JOIN profiles p ON p.user_id = r.reporter_id
+    LEFT JOIN users u ON u.id = r.reporter_id`;
   const values: unknown[] = [];
 
   if (status) {
-    queryStr += ' WHERE status = $1';
+    queryStr += ' WHERE r.status = $1';
     values.push(status);
   }
 
-  queryStr += ' ORDER BY created_at DESC LIMIT $' + (values.length + 1) + ' OFFSET $' + (values.length + 2);
+  queryStr += ` ORDER BY r.created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
   values.push(limit, offset);
 
   const result = await query(queryStr, values);

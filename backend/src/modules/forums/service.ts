@@ -1,6 +1,7 @@
 import { query } from '../../lib/db';
 import { AppError } from '../../middleware/errorHandler';
 import { getRealtimeIO } from '../../lib/realtime';
+import { createNotification } from '../notifications/service';
 
 export async function getColleges() {
   const result = await query('SELECT * FROM colleges ORDER BY sort_order, name');
@@ -232,10 +233,12 @@ export async function addComment(userId: string, postId: string, content: string
   // Notify post author
   const post = (await query('SELECT user_id FROM forum_posts WHERE id = $1', [postId])).rows[0] as { user_id: string };
   if (post.user_id !== userId) {
-    await query(
-      `INSERT INTO notifications (user_id, type, title, message, data)
-       VALUES ($1, 'forum_reply', 'New reply', 'Someone replied to your post', $2)`,
-      [post.user_id, JSON.stringify({ postId })]
+    await createNotification(
+      post.user_id,
+      'forum_reply',
+      'New reply',
+      'Someone replied to your post',
+      { postId }
     );
   }
 

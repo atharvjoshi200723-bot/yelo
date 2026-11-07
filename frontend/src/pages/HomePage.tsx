@@ -6,6 +6,7 @@ import { SocialPost, Comment } from '../types';
 import { Heart, MessageCircle, Bookmark, Share2, Plus, X, MapPin, Send, Trash2, Calendar, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import { useCity } from '../context/CityContext';
 import { ErrorState, FeedSkeleton } from '../components/ui/FeedbackStates';
 import { CreatePlanModal } from '../components/plans/CreatePlanModal';
 import { ImagePicker } from '../components/ui/ImagePicker';
@@ -35,6 +36,7 @@ const CATEGORY_STYLES: Record<string, { label: string; emoji: string; bg: string
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { selectedCity } = useCity();
   const navigate = useNavigate();
   const keyboardInset = useKeyboardInset();
   const [posts, setPosts] = useState<SocialPost[]>([]);
@@ -65,6 +67,7 @@ export default function HomePage() {
       setError(null);
       const params: Record<string, string | number> = { page: pageNum, limit: 20, sort: 'recent' };
       if (filter) params.category = filter;
+      if (selectedCity) params.city = selectedCity;
       const res = await api.get('/feed', { params });
       const data = res.data.posts || [];
       setPosts(prev => append ? [...prev, ...data] : data);
@@ -74,7 +77,7 @@ export default function HomePage() {
       setError(apiErr.response?.data?.error || 'Failed to load posts');
     }
     setLoading(false);
-  }, [filter]);
+  }, [filter, selectedCity]);
 
   useEffect(() => {
     setLoading(true);

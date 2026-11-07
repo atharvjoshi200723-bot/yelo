@@ -23,7 +23,7 @@ export default function CreateListingPage() {
   const [form, setForm] = useState({
     categoryId: '', title: '', description: '', pricePerDay: '',
     pricePerWeek: '', pricePerMonth: '', deposit: '', negotiable: true,
-    condition: 'good', locationName: '', availableFrom: '', availableUntil: '',
+    condition: 'good', locationName: '', availableFrom: new Date().toISOString().slice(0, 10), availableUntil: '',
   });
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
@@ -460,20 +460,16 @@ export default function CreateListingPage() {
               </div>
             </div>
 
-            {/* Big Lime Submit Button */}
+            {/* Big Lime Post / Submit Button */}
             <div className="pt-3">
               <button
                 type="submit"
-                disabled={loading || !isFormValid}
-                className={`w-full py-4 px-6 rounded-full font-display font-black text-sm uppercase tracking-wider select-none transition-all duration-150 flex items-center justify-center gap-2 ${
-                  isFormValid && !loading
-                    ? 'bg-[#C5F030] hover:bg-[#bcf01a] text-[#1B1250] border-3 border-[#1B1250] shadow-[4px_5px_0_#1B1250] active:translate-x-[2px] active:translate-y-[3px] active:shadow-[1px_1px_0_#1B1250] cursor-pointer'
-                    : 'bg-[#E0E2C8] text-[#1B1250]/40 border-2.5 border-[#1B1250]/30 shadow-none cursor-not-allowed'
-                }`}
+                disabled={loading}
+                className="w-full py-4 px-6 rounded-full font-display font-black text-base uppercase tracking-wider select-none transition-all duration-150 flex items-center justify-center gap-2 bg-[#C5F030] hover:bg-[#bcf01a] text-[#1B1250] border-3 border-[#1B1250] shadow-[4px_6px_0_#1B1250] active:translate-x-[2px] active:translate-y-[3px] active:shadow-[1px_1px_0_#1B1250] cursor-pointer disabled:opacity-50"
               >
                 {loading
-                  ? (isEditing ? 'Saving...' : 'Creating...')
-                  : (isEditing ? 'Save Changes' : 'Create Listing')}
+                  ? (isEditing ? 'Saving...' : 'Posting...')
+                  : (isEditing ? 'Save Changes' : 'Post Listing ✨')}
               </button>
             </div>
           </form>

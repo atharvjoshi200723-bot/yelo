@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ImagePicker } from '../components/ui/ImagePicker';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import { ForumPost, ForumCategory, College } from '../types';
 import { ArrowLeft, Plus, X, ArrowUp, MessageSquare } from 'lucide-react';
@@ -13,6 +13,7 @@ const AVATAR_COLORS = ['bg-[#C5F030]', 'bg-[#9A63E6]', 'bg-[#E8622B]', 'bg-[#2FA
 
 export default function ForumCategoryPage() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [college, setCollege] = useState<College | null>(null);
@@ -29,8 +30,7 @@ export default function ForumCategoryPage() {
   useEffect(() => {
     if (showCreate) {
       document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = '';
-    };
+      return () => { document.body.style.overflow = ''; };
     }
     document.body.style.overflow = '';
   }, [showCreate]);
@@ -39,10 +39,13 @@ export default function ForumCategoryPage() {
     if (!slug) return;
     api.get(`/forums/colleges/${slug}`).then(res => {
       setCollege(res.data.college);
-      setCategories(res.data.categories || []);
-      if (res.data.categories?.length > 0) {
-        setSelectedCategory(res.data.categories[0]);
-        fetchPosts(res.data.categories[0].id);
+      const cats: ForumCategory[] = res.data.categories || [];
+      setCategories(cats);
+      if (cats.length > 0) {
+        const targetSlug = searchParams.get('category')?.toLowerCase();
+        const found = cats.find(c => c.slug.toLowerCase() === targetSlug || c.name.toLowerCase() === targetSlug) || cats[0];
+        setSelectedCategory(found);
+        fetchPosts(found.id);
       }
       setLoading(false);
     });
@@ -59,6 +62,7 @@ export default function ForumCategoryPage() {
 
   const selectCategory = (cat: ForumCategory) => {
     setSelectedCategory(cat);
+    setSearchParams({ category: cat.slug });
     fetchPosts(cat.id);
   };
 
@@ -334,6 +338,29 @@ export default function ForumCategoryPage() {
               >
                 <X size={16} strokeWidth={2.5} className="text-[#1B1250]" />
               </button>
+            </div>
+
+            {/* Category selection */}
+            <div className="mb-4">
+              <label className="block text-xs font-black uppercase text-[#1B1250] mb-1.5">
+                Post Category
+              </label>
+              <div className="flex gap-1.5 flex-wrap max-h-28 overflow-y-auto p-1.5 bg-white border-2 border-[#1B1250]/30 rounded-[18px]">
+                {categories.map(cat => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => selectCategory(cat)}
+                    className={`px-3 py-1 rounded-full text-xs font-black border-2 border-[#1B1250] transition-all cursor-pointer ${
+                      selectedCategory?.id === cat.id
+                        ? 'bg-[#C5F030] text-[#1B1250] shadow-[2px_2px_0_#1B1250]'
+                        : 'bg-[#F6FBD4] text-[#1B1250]/70 hover:text-[#1B1250]'
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Title input */}

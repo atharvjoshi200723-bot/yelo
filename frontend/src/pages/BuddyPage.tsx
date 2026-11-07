@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { BuddyProfile, BuddyRequest } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useCity } from '../context/CityContext';
 import { Star, MapPin, CheckCircle, ArrowLeft, ChevronRight, UserPlus, Search, Send, MessageCircle } from 'lucide-react';
 import { ErrorState, FeedSkeleton } from '../components/ui/FeedbackStates';
 import {
@@ -37,6 +38,7 @@ const SORT_OPTIONS = [
 
 export default function BuddyPage() {
   const { user } = useAuth();
+  const { selectedCity } = useCity();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [buddies, setBuddies] = useState<BuddyProfile[]>([]);
@@ -71,6 +73,7 @@ export default function BuddyPage() {
         params.lat = String(userLocation.lat);
         params.lng = String(userLocation.lng);
       }
+      if (selectedCity) params.city = selectedCity;
       if (buddyType) params.buddyType = buddyType;
       if (activity) params.activity = activity;
       const res = await api.get('/buddy/search', { params });
@@ -135,7 +138,7 @@ export default function BuddyPage() {
     if (view === 'results') {
       fetchBuddies(selectedType || undefined, selectedActivity || undefined);
     }
-  }, [selectedType, selectedActivity, view, sort, userLocation]);
+  }, [selectedType, selectedActivity, view, sort, userLocation, selectedCity]);
 
   const handleFindBuddy = () => {
     setView('find');
@@ -450,7 +453,7 @@ export default function BuddyPage() {
                               }
                               return (
                                 <button
-                                  onClick={e => { e.preventDefault(); openBuddyChat(buddy.id, null); }}
+                                  onClick={e => { e.preventDefault(); navigate(`/buddy/${buddy.id}?action=request`); }}
                                   className="inline-flex items-center gap-1.5 text-xs font-black bg-[#C5F030] hover:bg-[#bcf01a] text-[#1B1250] border-2 border-[#1B1250] shadow-[2px_2px_0_#1B1250] px-3.5 py-1 rounded-full active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
                                 >
                                   <Send size={12} strokeWidth={2.5} /> Send request

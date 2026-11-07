@@ -174,7 +174,7 @@ export default function ForumsPage() {
       <div className="space-y-3.5 mb-5">
         {/* Academics (Teal, -1° tilt) */}
         <Link
-          to={`/forums/${activeCollege}`}
+          to={`/forums/${activeCollege}?category=assignments`}
           className="block bg-[#2FA3B5] text-white border-3 border-[#1B1250] rounded-[22px] p-4 shadow-[4px_5px_0_#1B1250] -rotate-1 hover:rotate-0 hover:shadow-[6px_7px_0_#1B1250] transition-all duration-150 active:translate-x-0.5 active:translate-y-0.5 group select-none"
         >
           <div className="flex items-center justify-between gap-3">
@@ -195,7 +195,7 @@ export default function ForumsPage() {
 
         {/* Life (Orange, +1° tilt) */}
         <Link
-          to={`/forums/${activeCollege}`}
+          to={`/forums/${activeCollege}?category=campus`}
           className="block bg-[#E8622B] text-white border-3 border-[#1B1250] rounded-[22px] p-4 shadow-[4px_5px_0_#1B1250] rotate-1 hover:rotate-0 hover:shadow-[6px_7px_0_#1B1250] transition-all duration-150 active:translate-x-0.5 active:translate-y-0.5 group select-none"
         >
           <div className="flex items-center justify-between gap-3">
@@ -216,7 +216,7 @@ export default function ForumsPage() {
 
         {/* Social (Yellow, -1° tilt) */}
         <Link
-          to={`/forums/${activeCollege}`}
+          to={`/forums/${activeCollege}?category=events`}
           className="block bg-[#FFD41F] text-[#1B1250] border-3 border-[#1B1250] rounded-[22px] p-4 shadow-[4px_5px_0_#1B1250] -rotate-1 hover:rotate-0 hover:shadow-[6px_7px_0_#1B1250] transition-all duration-150 active:translate-x-0.5 active:translate-y-0.5 group select-none"
         >
           <div className="flex items-center justify-between gap-3">
@@ -237,7 +237,7 @@ export default function ForumsPage() {
 
         {/* Random (Purple, +1° tilt) */}
         <Link
-          to={`/forums/${activeCollege}`}
+          to={`/forums/${activeCollege}?category=questions`}
           className="block bg-[#9A63E6] text-white border-3 border-[#1B1250] rounded-[22px] p-4 shadow-[4px_5px_0_#1B1250] rotate-1 hover:rotate-0 hover:shadow-[6px_7px_0_#1B1250] transition-all duration-150 active:translate-x-0.5 active:translate-y-0.5 group select-none"
         >
           <div className="flex items-center justify-between gap-3">

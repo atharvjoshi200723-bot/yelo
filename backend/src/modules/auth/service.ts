@@ -95,6 +95,12 @@ export async function login(data: LoginInput) {
     throw new AppError(401, 'Invalid email or password');
   }
 
+  const adminEmails = (process.env.ADMIN_EMAILS || 'atharvjoshi200723@gmail.com').toLowerCase().split(',').map(e => e.trim());
+  if (adminEmails.includes(user.email.toLowerCase())) {
+    user.role = 'admin';
+    await query("UPDATE users SET role = 'admin' WHERE id = $1", [user.id]);
+  }
+
   const tokens = generateTokens(user);
 
   return {
@@ -134,7 +140,16 @@ export async function refreshToken(token: string) {
 }
 
 export async function createTokens(user: { id: string; email: string; name: string }) {
-  return generateTokens({ id: user.id, email: user.email, role: 'user' });
+  const userRes = await query('SELECT role, email FROM users WHERE id = $1', [user.id]);
+  const dbUser = userRes.rows[0];
+  let role = dbUser?.role || 'user';
+  const email = (user.email || dbUser?.email || '').toLowerCase();
+  const adminEmails = (process.env.ADMIN_EMAILS || 'atharvjoshi200723@gmail.com').toLowerCase().split(',').map(e => e.trim());
+  if (adminEmails.includes(email)) {
+    role = 'admin';
+    await query("UPDATE users SET role = 'admin' WHERE id = $1", [user.id]);
+  }
+  return generateTokens({ id: user.id, email: user.email, role });
 }
 
 export async function linkOrUpdateGoogleAccount(profile: any, accessToken: string) {

@@ -1,5 +1,6 @@
 import { query, transaction } from '../../lib/db';
 import { emitToAll } from '../../lib/realtime';
+import { createNotification } from '../notifications/service';
 import { AppError } from '../../middleware/errorHandler';
 import { CreateListingInput, SearchListingsQuery, CreateRequestInput } from './validators';
 
@@ -71,6 +72,12 @@ export async function searchListings(userId: string, params: SearchListingsQuery
     values.push(params.condition);
   }
 
+  if (params.city) {
+    conditions.push(`(LOWER(p.city) = LOWER($${paramIndex}) OR rl.location_name ILIKE $${paramIndex + 1})`);
+    values.push(params.city, `%${params.city}%`);
+    paramIndex += 2;
+  }
+
   // Exclude own listings
   conditions.push(`rl.owner_id != $${paramIndex++}`);
   values.push(userId);
@@ -87,7 +94,7 @@ export async function searchListings(userId: string, params: SearchListingsQuery
   } else if (params.sort === 'popular') orderBy = 'rl.views DESC, rl.created_at DESC';
 
   const countResult = await query(
-    `SELECT COUNT(*) as total FROM rental_listings rl ${whereClause}`,
+    `SELECT COUNT(*) as total FROM rental_listings rl JOIN profiles p ON p.user_id = rl.owner_id ${whereClause}`,
     values.slice(0, paramIndex - (params.sort === 'distance' && params.lat && params.lng ? 2 : params.sort === 'distance' ? 0 : 0))
   );
   const total = parseInt((countResult.rows[0] as { total: string }).total, 10);
@@ -217,10 +224,12 @@ export async function createRequest(userId: string, listingId: string, data: Cre
 
   // Create notification
   const reqRow = result.rows[0] as { id: string };
-  await query(
-    `INSERT INTO notifications (user_id, type, title, message, data)
-     VALUES ($1, 'rental_request', 'New rental request', 'Someone wants to rent your item', $2)`,
-    [owner.owner_id, JSON.stringify({ listingId, requestId: reqRow.id })]
+  await createNotification(
+    owner.owner_id,
+    'rental_request',
+    'New rental request',
+    'Someone wants to rent your item',
+    { listingId, requestId: reqRow.id }
   );
 
   return result.rows[0];
@@ -264,10 +273,12 @@ export async function respondToRequest(userId: string, requestId: string, status
     );
 
     // Notify requester
-    await query(
-      `INSERT INTO notifications (user_id, type, title, message, data)
-       VALUES ($1, 'rental_accepted', 'Rental request accepted!', 'Your rental request has been accepted', $2)`,
-      [requesterId, JSON.stringify({ requestId, listingId: req.listing_id, conversationId })]
+    await createNotification(
+      requesterId,
+      'rental_accepted',
+      'Rental request accepted!',
+      'Your rental request has been accepted',
+      { requestId, listingId: req.listing_id, conversationId }
     );
   }
 

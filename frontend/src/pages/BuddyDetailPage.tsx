@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import { BuddyProfile, BuddyRequest } from '../types';
 import { MapPin, Star, ArrowLeft, MessageCircle, Shield, CheckCircle, Clock, Heart, Calendar, Send, Flag, X } from 'lucide-react';
@@ -20,6 +20,7 @@ const ALL_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 export default function BuddyDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [buddy, setBuddy] = useState<BuddyProfile | null>(null);
@@ -27,9 +28,9 @@ export default function BuddyDetailPage() {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requestState, setRequestState] = useState<BuddyRequest | null>(null);
   const [requestForm, setRequestForm] = useState({
-    activity: '',
+    activity: 'Coffee',
     message: '',
-    proposedDate: '',
+    proposedDate: new Date().toISOString().slice(0, 10),
     proposedTime: '17:00',
     proposedDurationHours: '2',
     proposedLocation: '',
@@ -42,10 +43,17 @@ export default function BuddyDetailPage() {
   useEffect(() => {
     if (!id) return;
     api.get(`/buddy/${id}`).then(res => {
-      setBuddy(res.data.buddy);
+      const b = res.data.buddy;
+      setBuddy(b);
+      if (b?.activities?.length) {
+        setRequestForm(prev => ({ ...prev, activity: prev.activity || b.activities[0] }));
+      }
       setLoading(false);
+      if (searchParams.get('action') === 'request') {
+        setShowRequestForm(true);
+      }
     }).catch(() => navigate('/buddy'));
-  }, [id]);
+  }, [id, searchParams]);
 
   // Check request status + conversation for this buddy profile
   useEffect(() => {
@@ -84,6 +92,14 @@ export default function BuddyDetailPage() {
     return () => { cancelled = true; };
   }, [buddy?.id, buddy?.user_id, user?.id]);  const handleRequest = async () => {
     if (!id) return;
+    if (!requestForm.activity) {
+      setRequestError('Please choose an activity.');
+      return;
+    }
+    if (!requestForm.proposedDate) {
+      setRequestError('Please select a date.');
+      return;
+    }
     setRequestError(null);
     setSubmitting(true);
     try {
@@ -252,6 +268,20 @@ export default function BuddyDetailPage() {
               18+ only · Meet in public · Social companionship only · No sexual services
             </p>
           </div>
+
+          {/* In-Card Send Request Action Button */}
+          {user?.id !== buddy.user_id && !requestState && (
+            <div className="mt-5 pt-4 border-t-2.5 border-[#1B1250]/15">
+              <button
+                type="button"
+                onClick={() => setShowRequestForm(true)}
+                className="w-full py-4 bg-[#C5F030] hover:bg-[#bcf01a] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-display font-black uppercase text-base shadow-[4px_5px_0_#1B1250] active:translate-x-[2px] active:translate-y-[3px] active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Send size={18} strokeWidth={2.5} />
+                <span>Send Request to {buddy.name}</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -439,20 +469,22 @@ export default function BuddyDetailPage() {
             {/* Actions */}
             <div className="flex gap-3 mt-6">
               <button
+                type="button"
                 onClick={() => setShowRequestForm(false)}
-                className="flex-1 py-3.5 bg-[#F6FBD4] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-black text-sm shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
+                className="flex-1 py-3.5 bg-[#F6FBD4] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-black text-sm shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all cursor-pointer"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleRequest}
-                disabled={submitting || !requestForm.proposedDate || !requestForm.activity}
-                className="flex-1 py-3.5 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-black text-sm shadow-neo disabled:opacity-40 active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all flex items-center justify-center gap-2"
+                disabled={submitting}
+                className="flex-1 py-3.5 bg-[#C5F030] hover:bg-[#bcf01a] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-black text-sm shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {submitting ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1B1250]" />
                 ) : (
-                  <><Send size={15} /> Send Request</>
+                  <><Send size={15} strokeWidth={2.5} /> Send Request</>
                 )}
               </button>
             </div>
@@ -469,46 +501,48 @@ export default function BuddyDetailPage() {
         />
       )}
 
-      {/* Sticky bottom action bar */}
+      {/* Sticky action bar (floats safely above BottomNav) */}
       {user?.id !== buddy.user_id && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#F6FBD4] border-t-3 border-[#1B1250] px-4 py-4 flex gap-3 items-center shadow-[0_-4px_0_#1B1250]">
-          {!requestState ? (
-            <>
-              <button
-                onClick={() => setShowRequestForm(true)}
-                className="flex-1 py-4 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-display font-black uppercase text-base shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
-              >
-                Send Request
-              </button>
-              <button
-                onClick={() => {
-                  if (conversationId) {
-                    navigate(`/messages?conv=${conversationId}`);
-                  } else {
-                    alert('No chat available right now.');
-                  }
-                }}
-                className="w-14 h-14 bg-[#F6FBD4] border-3 border-[#1B1250] rounded-full flex items-center justify-center shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all"
-                aria-label="Open chat"
-              >
-                <MessageCircle size={22} className={conversationId ? 'text-[#1B1250]' : 'text-[#1B1250]/30'} />
-              </button>
-            </>
-          ) : requestState.status === 'accepted' && conversationId ? (
-            <button
-              onClick={openChat}
-              className="flex-1 py-4 bg-[#C5F030] text-[#1B1250] border-3 border-[#1B1250] rounded-full font-display font-black uppercase text-base shadow-neo active:translate-x-[3px] active:translate-y-[4px] active:shadow-none transition-all flex items-center justify-center gap-2"
-            >
-              <MessageCircle size={18} /> Chat
-            </button>
-          ) : (
-            <button
-              disabled
-              className="flex-1 py-4 bg-[#1B1250]/10 text-[#1B1250]/40 border-3 border-[#1B1250]/20 rounded-full font-display font-black uppercase text-base cursor-not-allowed"
-            >
-              Request Sent
-            </button>
-          )}
+        <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-30 pointer-events-none">
+          <div className="max-w-[480px] mx-auto px-4">
+            <div className="pointer-events-auto bg-[#F6FBD4] border-3 border-[#1B1250] rounded-full p-2 flex gap-2 items-center shadow-[4px_6px_0_#1B1250]">
+              {!requestState ? (
+                <>
+                  <button
+                    onClick={() => setShowRequestForm(true)}
+                    className="flex-1 py-3 bg-[#C5F030] hover:bg-[#bcf01a] text-[#1B1250] border-2.5 border-[#1B1250] rounded-full font-display font-black uppercase text-sm shadow-[2px_2px_0_#1B1250] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Send size={15} strokeWidth={2.5} />
+                    <span>Send Request</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (conversationId) {
+                        navigate(`/messages?conv=${conversationId}`);
+                      } else {
+                        alert('No chat available yet. Send a request to connect!');
+                      }
+                    }}
+                    className="w-11 h-11 bg-white border-2.5 border-[#1B1250] rounded-full flex items-center justify-center shadow-[2px_2px_0_#1B1250] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all shrink-0 cursor-pointer"
+                    aria-label="Open chat"
+                  >
+                    <MessageCircle size={20} className={conversationId ? 'text-[#1B1250]' : 'text-[#1B1250]/40'} />
+                  </button>
+                </>
+              ) : requestState.status === 'accepted' && conversationId ? (
+                <button
+                  onClick={openChat}
+                  className="flex-1 py-3 bg-[#C5F030] text-[#1B1250] border-2.5 border-[#1B1250] rounded-full font-display font-black uppercase text-sm shadow-[2px_2px_0_#1B1250] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <MessageCircle size={16} /> Chat Now
+                </button>
+              ) : (
+                <div className="flex-1 py-2.5 px-4 text-center font-black text-xs uppercase text-[#1B1250]/60">
+                  Request Sent · Waiting for response
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

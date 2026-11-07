@@ -26,6 +26,7 @@ export const searchListingsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   q: z.string().max(200).optional(),
   categoryId: z.string().uuid().optional(),
+  city: z.string().max(100).optional(),
   lat: z.coerce.number().min(-90).max(90).optional(),
   lng: z.coerce.number().min(-180).max(180).optional(),
   radius: z.coerce.number().min(0.1).max(50).default(50),

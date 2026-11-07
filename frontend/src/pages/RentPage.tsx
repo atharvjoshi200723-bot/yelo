@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { useAuth } from '../context/AuthContext';
+import { useCity } from '../context/CityContext';
 import { RentalListing } from '../types';
 import { Search, Plus, MapPin, Package, ChevronDown } from 'lucide-react';
 import { ErrorState, EmptyState, GridSkeleton } from '../components/ui/FeedbackStates';
@@ -30,6 +31,7 @@ const SORT_OPTIONS = [
 
 export default function RentPage() {
   const { user } = useAuth();
+  const { selectedCity } = useCity();
   const [listings, setListings] = useState<RentalListing[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +67,7 @@ export default function RentPage() {
       }
       if (searchQuery) params.q = searchQuery;
       if (selectedCategory) params.categoryId = selectedCategory;
+      if (selectedCity) params.city = selectedCity;
       const res = await api.get('/rentals/search', { params });
       const data = res.data.listings || [];
       setListings(prev => append ? [...prev, ...data] : data);
@@ -73,7 +76,7 @@ export default function RentPage() {
       setError(apiErr.response?.data?.error || 'Failed to load listings');
     }
     setLoading(false);
-  }, [searchQuery, selectedCategory, radius, sort, userLocation]);
+  }, [searchQuery, selectedCategory, radius, sort, userLocation, selectedCity]);
 
   useEffect(() => { setPage(1); fetchListings(1, false); }, [fetchListings]);
 
@@ -182,7 +185,7 @@ export default function RentPage() {
         {/* Big Stat Count */}
         <div>
           <div className="text-[11px] font-black uppercase tracking-wider text-[#1B1250]/70">
-            Within {radius === '50' ? 'Dehradun' : `${radius} km`}
+            Within {radius === '50' ? selectedCity : `${radius} km`}
           </div>
           <div className="flex items-baseline gap-2 mt-0.5">
             <span className="font-display font-black text-3xl sm:text-4xl text-[#1B1250] leading-none">

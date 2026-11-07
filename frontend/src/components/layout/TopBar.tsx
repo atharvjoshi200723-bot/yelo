@@ -1,16 +1,20 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Bell, MapPin, ChevronDown, LogOut, User as UserIcon, Settings, Shield } from 'lucide-react';
+import { useCity } from '../../context/CityContext';
+import { Bell, MapPin, ChevronDown, LogOut, User as UserIcon, Settings, Shield, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
+import { getSocket } from '../../lib/socket';
 import { DehradunHills } from '../neo/Decorations';
 
 export default function TopBar() {
   const { user, logout } = useAuth();
+  const { selectedCity, setSelectedCity, cities } = useCity();
   const navigate = useNavigate();
   const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+  const [showCityMenu, setShowCityMenu] = useState(false);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -23,6 +27,26 @@ export default function TopBar() {
     };
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
+
+    let socket: ReturnType<typeof getSocket> | null = null;
+    try {
+      socket = getSocket();
+      if (socket) {
+        const handleLiveNotification = () => {
+          setUnreadCount(prev => prev + 1);
+        };
+        socket.on('notification', handleLiveNotification);
+        socket.on('new_message', handleLiveNotification);
+        return () => {
+          clearInterval(interval);
+          socket?.off('notification', handleLiveNotification);
+          socket?.off('new_message', handleLiveNotification);
+        };
+      }
+    } catch {
+      /* not signed in */
+    }
+
     return () => clearInterval(interval);
   }, []);
 
@@ -81,11 +105,73 @@ export default function TopBar() {
           </div>
         </Link>
 
-        {/* City Selector: Small Pill */}
-        <div className="flex items-center gap-1.5 bg-[#EAE4FB] hover:bg-[#F5F2FF] text-[#1B1250] px-3 py-1 rounded-full border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] select-none cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none">
-          <MapPin size={13} className="text-[#E8622B] shrink-0 fill-[#E8622B]" />
-          <span className="text-[11px] font-black tracking-wider uppercase">Dehradun</span>
-          <ChevronDown size={12} strokeWidth={3} className="text-[#1B1250]" />
+        {/* City Selector: Clickable Dropdown Pill */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setShowCityMenu(!showCityMenu);
+              setShowMenu(false);
+            }}
+            className="flex items-center gap-1.5 bg-[#EAE4FB] hover:bg-[#F5F2FF] text-[#1B1250] px-3 py-1 rounded-full border-2.5 border-[#1B1250] shadow-[2px_2px_0_#1B1250] select-none cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+            aria-label="Change location"
+            aria-expanded={showCityMenu}
+          >
+            <MapPin size={13} className="text-[#E8622B] shrink-0 fill-[#E8622B]" />
+            <span className="text-[11px] font-black tracking-wider uppercase max-w-[85px] sm:max-w-[120px] truncate">
+              {selectedCity}
+            </span>
+            <ChevronDown
+              size={12}
+              strokeWidth={3}
+              className={`text-[#1B1250] transition-transform duration-200 ${showCityMenu ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {/* City Selection Dropdown Menu */}
+          {showCityMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowCityMenu(false)} />
+              <div
+                className="absolute left-0 top-full mt-2 w-48 bg-[#F6FBD4] rounded-[20px] border-3 border-[#1B1250] shadow-[5px_6px_0_#1B1250] py-2 z-50 animate-pop-in max-h-72 overflow-y-auto no-scrollbar"
+                role="menu"
+                aria-label="Select location"
+              >
+                <div className="px-3.5 py-1.5 border-b-2 border-[#1B1250]/15">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[#1B1250]/60">
+                    Uttarakhand Places
+                  </p>
+                </div>
+                {cities.map((city) => {
+                  const isSelected = selectedCity.toLowerCase() === city.toLowerCase();
+                  return (
+                    <button
+                      key={city}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCity(city);
+                        setShowCityMenu(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2 text-xs font-black transition-colors flex items-center justify-between cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#C5F030] text-[#1B1250]'
+                          : 'text-[#1B1250] hover:bg-white'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <MapPin
+                          size={12}
+                          className={isSelected ? 'text-[#1B1250] fill-[#1B1250]' : 'text-[#E8622B]'}
+                        />
+                        {city}
+                      </span>
+                      {isSelected && <Check size={14} strokeWidth={3} className="text-[#1B1250]" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Actions: Circular Bell & Avatar */}
@@ -158,7 +244,7 @@ export default function TopBar() {
                     <Settings size={14} strokeWidth={2.5} />
                     Profile Settings
                   </Link>
-                  {user?.role === 'admin' && (
+                  {(user?.role === 'admin' || user?.email?.toLowerCase() === 'atharvjoshi200723@gmail.com') && (
                     <Link
                       to="/admin"
                       className="px-4 py-2.5 text-xs font-black text-[#1B1250] hover:bg-[#C5F030] transition-colors border-b-2 border-[#1B1250]/15 flex items-center gap-2"

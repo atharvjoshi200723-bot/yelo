@@ -1,5 +1,6 @@
 import { query } from '../../lib/db';
 import { emitToAll } from '../../lib/realtime';
+import { createNotification } from '../notifications/service';
 import { AppError } from '../../middleware/errorHandler';
 import { CreateBuddyProfileInput, SearchBuddyQuery, CreateBuddyRequestInput } from './validators';
 
@@ -199,6 +200,12 @@ export async function searchBuddies(userId: string, params: SearchBuddyQuery) {
     values.push(params.day);
   }
 
+  if (params.city) {
+    conditions.push(`(LOWER(p.city) = LOWER($${paramIndex}) OR bp.location_name ILIKE $${paramIndex + 1})`);
+    values.push(params.city, `%${params.city}%`);
+    paramIndex += 2;
+  }
+
   // Exclude self and blocked users
   conditions.push(`bp.user_id != $${paramIndex++}`);
   values.push(userId);
@@ -219,7 +226,7 @@ export async function searchBuddies(userId: string, params: SearchBuddyQuery) {
     paramIndex += 2;
   }
 
-  const countResult = await query(`SELECT COUNT(*) as total FROM buddy_profiles bp ${whereClause}`, values);
+  const countResult = await query(`SELECT COUNT(*) as total FROM buddy_profiles bp JOIN profiles p ON p.user_id = bp.user_id ${whereClause}`, values);
   const total = parseInt((countResult.rows[0] as { total: string }).total, 10);
 
   const offset = (params.page - 1) * params.limit;
@@ -280,10 +287,12 @@ export async function createRequest(userId: string, buddyProfileId: string, data
     [buddyProfileId, userId, prof.user_id, data.activity, data.message || null, data.proposedDate, data.proposedTime, data.proposedDurationHours, data.proposedLocation || null]
   );
 
-  await query(
-    `INSERT INTO notifications (user_id, type, title, message, data)
-     VALUES ($1, 'buddy_request', 'New buddy request', 'Someone wants to hang out with you!', $2)`,
-    [prof.user_id, JSON.stringify({ buddyProfileId, requestId: result.rows[0].id })]
+  await createNotification(
+    prof.user_id,
+    'buddy_request',
+    'New buddy request',
+    'Someone wants to hang out with you!',
+    { buddyProfileId, requestId: result.rows[0].id }
   );
 
   return result.rows[0];
@@ -325,10 +334,12 @@ export async function respondToRequest(userId: string, requestId: string, status
        requestData.proposed_duration_hours, agreedPrice]
     );
 
-    await query(
-      `INSERT INTO notifications (user_id, type, title, message, data)
-       VALUES ($1, 'buddy_accepted', 'Buddy request accepted!', 'Your buddy request was accepted', $2)`,
-      [requestData.requester_id as string, JSON.stringify({ requestId })]
+    await createNotification(
+      requestData.requester_id as string,
+      'buddy_accepted',
+      'Buddy request accepted!',
+      'Your buddy request was accepted',
+      { requestId }
     );
   }
 

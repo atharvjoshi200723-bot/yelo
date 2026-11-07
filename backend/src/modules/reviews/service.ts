@@ -1,5 +1,6 @@
 import { query } from '../../lib/db';
 import { AppError } from '../../middleware/errorHandler';
+import { createNotification } from '../notifications/service';
 
 export async function createReview(
   reviewerId: string,
@@ -55,10 +56,12 @@ export async function createReview(
   );
 
   // Notify
-  await query(
-    `INSERT INTO notifications (user_id, type, title, message, data)
-     VALUES ($1, 'review', 'New review', 'You received a new review', $2)`,
-    [reviewedUserId, JSON.stringify({ reviewId: result.rows[0] })]
+  await createNotification(
+    reviewedUserId,
+    'review',
+    'New review',
+    'You received a new review',
+    { reviewId: result.rows[0]?.id }
   );
 
   return result.rows[0];

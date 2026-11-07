@@ -13,6 +13,8 @@ router.get('/users', asyncHandler(controller.getUsers));
 router.put('/users/:id/status', asyncHandler(controller.updateUserStatus));
 router.get('/listings', asyncHandler(controller.getListings));
 router.put('/listings/:id/remove', asyncHandler(controller.removeListing));
+router.get('/social-posts', asyncHandler(controller.getSocialPosts));
+router.delete('/social-posts/:id', asyncHandler(controller.removeSocialPost));
 router.put('/forum-posts/:id/remove', asyncHandler(controller.removeForumPost));
 router.post('/colleges', asyncHandler(controller.createCollege));
 router.post('/forum-categories', asyncHandler(controller.createForumCategory));

@@ -103,6 +103,36 @@ export async function removeForumPost(postId: string, adminId: string, reason: s
   );
 }
 
+export async function getSocialPosts(page: number = 1, limit: number = 20, search?: string) {
+  const offset = (page - 1) * limit;
+  let queryStr = `
+    SELECT sp.id, sp.user_id, sp.category, sp.title, sp.content, sp.image_urls,
+           sp.likes_count, sp.comments_count, sp.created_at,
+           p.name as author_name, p.avatar_url as author_avatar
+    FROM social_posts sp
+    JOIN profiles p ON p.user_id = sp.user_id`;
+  const values: unknown[] = [];
+
+  if (search) {
+    queryStr += ` WHERE sp.content ILIKE $1 OR sp.title ILIKE $1 OR p.name ILIKE $1`;
+    values.push(`%${search}%`);
+  }
+
+  queryStr += ` ORDER BY sp.created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+  values.push(limit, offset);
+
+  const result = await query(queryStr, values);
+  return result.rows;
+}
+
+export async function removeSocialPost(postId: string, adminId: string, reason: string) {
+  await query('DELETE FROM social_posts WHERE id = $1', [postId]);
+  await query(
+    'INSERT INTO admin_actions (admin_id, action_type, reason) VALUES ($1, $2, $3)',
+    [adminId, 'remove_social_post', reason]
+  );
+}
+
 export async function createCollege(name: string, slug: string, city: string = 'Dehradun', description?: string) {
   const result = await query(
     'INSERT INTO colleges (name, slug, city, description) VALUES ($1, $2, $3, $4) RETURNING *',

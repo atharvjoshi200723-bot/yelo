@@ -1,5 +1,6 @@
 import { query } from '../../lib/db';
 import { emitToAll } from '../../lib/realtime';
+import { createNotification } from '../notifications/service';
 import { AppError } from '../../middleware/errorHandler';
 import { CreatePostInput, FeedQuery } from './validators';
 
@@ -43,6 +44,12 @@ export async function getFeed(userId: string, params: FeedQuery) {
     values.push(params.category);
   }
 
+  if (params.city) {
+    conditions.push(`(LOWER(p.city) = LOWER($${paramIndex}) OR sp.location_name ILIKE $${paramIndex + 1})`);
+    values.push(params.city, `%${params.city}%`);
+    paramIndex += 2;
+  }
+
   // Exclude blocked users
   conditions.push(`sp.user_id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = $${paramIndex++})`);
   values.push(userId);
@@ -70,7 +77,7 @@ export async function getFeed(userId: string, params: FeedQuery) {
 
   // Count query uses only WHERE clause params (not ORDER BY params)
   const countResult = await query(
-    `SELECT COUNT(*) as total FROM social_posts sp ${whereClause}`,
+    `SELECT COUNT(*) as total FROM social_posts sp JOIN profiles p ON p.user_id = sp.user_id ${whereClause}`,
     whereValues
   );
   const total = parseInt((countResult.rows[0] as { total: string }).total, 10);
@@ -211,6 +218,13 @@ export async function requestJoin(userId: string, postId: string) {
       'INSERT INTO plan_join_requests (post_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
       [postId, userId]
     );
+    await createNotification(
+      post.user_id as string,
+      'plan_join_request',
+      'New Linkup request',
+      'Someone wants to join your Linkup plan!',
+      { postId }
+    );
   }
 
   return getJoinState(userId, postId, max);
@@ -276,6 +290,13 @@ export async function acceptJoinRequest(ownerId: string, postId: string, request
 
   await query('INSERT INTO plan_participants (post_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [postId, requesterId]);
   await query('DELETE FROM plan_join_requests WHERE post_id = $1 AND user_id = $2', [postId, requesterId]);
+  await createNotification(
+    requesterId,
+    'plan_join_accepted',
+    'Linkup request accepted!',
+    'You were accepted into the Linkup plan!',
+    { postId }
+  );
 
   return getJoinState(ownerId, postId, max);
 }
@@ -337,6 +358,16 @@ export async function addComment(userId: string, postId: string, content: string
     [postId, userId, content]
   );
   await query('UPDATE social_posts SET comments_count = comments_count + 1 WHERE id = $1', [postId]);
+  const postAuthor = (postCheck.rows[0] as { user_id: string }).user_id;
+  if (postAuthor !== userId) {
+    await createNotification(
+      postAuthor,
+      'post_comment',
+      'New comment on your post',
+      content.substring(0, 100),
+      { postId }
+    );
+  }
   return result.rows[0];
 }
 

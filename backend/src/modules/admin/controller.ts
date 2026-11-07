@@ -42,6 +42,20 @@ export async function removeForumPost(req: AuthRequest, res: Response) {
   res.json({ message: 'Post removed' });
 }
 
+export async function getSocialPosts(req: AuthRequest, res: Response) {
+  const page = parseInt((req.query.page as string) || '1', 10);
+  const search = req.query.search as string | undefined;
+  const posts = await adminService.getSocialPosts(page, 20, search);
+  res.json({ posts });
+}
+
+export async function removeSocialPost(req: AuthRequest, res: Response) {
+  const id = req.params.id as string;
+  const { reason } = req.body;
+  await adminService.removeSocialPost(id, req.user!.id, reason || 'Removed by admin');
+  res.json({ message: 'Feed post deleted' });
+}
+
 export async function createCollege(req: AuthRequest, res: Response) {
   const { name, slug, city, description } = req.body;
   const college = await adminService.createCollege(name, slug, city, description);

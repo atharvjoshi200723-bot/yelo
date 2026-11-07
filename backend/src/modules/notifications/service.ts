@@ -1,4 +1,17 @@
 import { query } from '../../lib/db';
+import { emitToUser } from '../../lib/realtime';
+
+export async function createNotification(userId: string, type: string, title: string, message: string, data?: unknown) {
+  const result = await query(
+    `INSERT INTO notifications (user_id, type, title, message, data)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [userId, type, title, message, data ? JSON.stringify(data) : null]
+  );
+  const row = result.rows[0];
+  emitToUser(userId, 'notification', row);
+  return row;
+}
 
 export async function getNotifications(userId: string, page: number = 1, limit: number = 20) {
   const offset = (page - 1) * limit;

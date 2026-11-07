@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { getSocket } from '../lib/socket';
 import { Notification } from '../types';
 import { Bell, UserPlus, MessageCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -124,6 +125,22 @@ export default function NotificationsPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    let socket: ReturnType<typeof getSocket> | null = null;
+    try {
+      socket = getSocket();
+      if (socket) {
+        const onNotification = (notif: Notification) => {
+          setNotifications(prev => [notif, ...prev.filter(n => n.id !== notif.id)]);
+        };
+        socket.on('notification', onNotification);
+        return () => {
+          socket?.off('notification', onNotification);
+        };
+      }
+    } catch {
+      /* not signed in */
+    }
   }, []);
 
   const handleClick = async (notification: Notification) => {

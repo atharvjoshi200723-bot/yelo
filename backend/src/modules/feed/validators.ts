@@ -21,6 +21,7 @@ export const feedQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   category: z.enum(['general', 'rent', 'buddy', 'college', 'event', 'question', 'discussion']).optional(),
+  city: z.string().max(100).optional(),
   lat: z.coerce.number().min(-90).max(90).optional(),
   lng: z.coerce.number().min(-180).max(180).optional(),
   radius: z.coerce.number().min(0.1).max(50).default(50), // km
